@@ -1,0 +1,12 @@
+name: graph-optimization
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - geopandas=0.13.2
+  - fiona=1.9.6
+  - momepy>=0.8.1,<0.11.0
+  - networkx=3.1
+  - numpy=1.26.4
+  - pandas=2.0.3
+  - shapely=2.0.6

@@ -1,0 +1,25 @@
+[project]
+name = "graph-optimization"
+version = "0.0.0"
+description = "HGLM CRC submission: multi‐start LNS for counterfactual routing"
+authors = ["Team HGLM <soge.ink@gmail.com>"]
+requires-python = ">=3.12,<4.0"
+dependencies = [
+    "geopandas==0.13.2",
+    "fiona==1.9.6",
+    "momepy>=0.8.1,<0.11.0",
+    "networkx==3.1",
+    "numpy==1.26.4",
+    "pandas==2.0.3",
+    "shapely==2.0.6",
+]
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.group.dev.dependencies]
+jupyter = "^1.1.1"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
