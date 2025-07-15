@@ -1,4 +1,4 @@
-instance,"elapsed, s","time_to_best, s",success,route_error,graph_error,route_difference
+instance,"elapsed, s","time_to_best, s",success,penalty,graph_error,route_difference
 osdpm_0_1,97.48399999999992,4.8279999999999745,True,0,1,0.0
 osdpm_0_2,98.26600000000008,9.858999999999924,True,0,1,0.014013500000000012
 osdpm_0_3,97.7180000000003,86.9060000000004,True,0,3,0.03871833000000002

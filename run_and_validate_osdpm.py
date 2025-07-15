@@ -50,7 +50,7 @@ def save_validation_summary(
             df['validation'].tolist(), index=df.index
         )
         # Split info tuple into its components with meaningful names
-        info_cols = ['route_error', 'graph_error', 'route_difference']
+        info_cols = ['penalty', 'graph_error', 'route_difference']
         df[info_cols] = pd.DataFrame(
             df['info'].tolist(), index=df.index
         )
