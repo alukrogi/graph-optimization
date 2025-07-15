@@ -50,11 +50,13 @@ Generates `out/validation_summary.csv` for all training instances.
 python run_lns.py
 ```
 
-Runs the core multi‑start LNS algorithm on sample instances; prints the best objective, wall‑clock duration, and time‑to‑best for each run.
+Runs the core multi‑start LNS algorithm on sample instances; prints the best objective, wall‑clock duration, and
+time‑to‑best for each run.
 
 ### `out/` directory
 
-The `out/` folder contains all results produced by running `run_and_validate_osdpm.py` on a laptop with an Intel i5‑13500H CPU and 16 GB of RAM. 
+The `out/` folder contains all results produced by running `run_and_validate_osdpm.py` on a laptop with an Intel
+i5‑13500H CPU and 16 GB of RAM.
 The time limit for each run was 100 seconds.
 It also includes a brief description of proved lower bounds for the training instances.
 
@@ -71,4 +73,29 @@ It also includes a brief description of proved lower bounds for the training ins
 └── validation/
 ```
 
+## Notes
 
+- **Subgraph selection in `create_network_graph(df)`**
+  ```python
+  S_sel = [G_sel.subgraph(c).copy()
+           for c in sorted(nx.connected_components(G_sel),
+                           key=len, reverse=True)]
+  # Networks may fragment into multiple disconnected subgraphs.
+  # If `my_areas` is set, only the two largest subgraphs are kept.
+  # Demo data is fully connected, so this step is skipped:
+  G_con = G
+  if len(S_sel) > 1:
+      G_sel_con = nx.compose(S_sel[0], S_sel[1])
+  else:
+      G_sel_con = G_sel
+    ```
+
+_**Caution:** The validation pipeline applies subgraph‑selection (keeping only the largest connected components),
+whereas
+our optimization routines operate on the **entire** graph. If a data contains multiple disconnected components, this
+mismatch may cause discrepancies in validation results._
+
+- **Graph directionality mismatch in modifications:** Our optimization process applies changes directly to the directed
+  `MultiDiGraph`, whereas the validation pipeline and the output operator list treat the graph as undirected (applying
+  each modification to both directions of a bi‑directional edge). This inconsistency can introduce additional
+  discrepancies.  

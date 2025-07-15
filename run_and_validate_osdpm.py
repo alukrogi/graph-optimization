@@ -65,7 +65,8 @@ if __name__ == "__main__":
     for n in range(0, 5):
         for m in range(1, 6):
             start = time.monotonic()
-            base = f"data/train/routes/osdpm_{n}_{m}"
+            inst_name = f"osdpm_{n}_{m}"
+            base = f"data/train/routes/{inst_name}"
             foil_json_path = f"{base}/foil_route.json"
             df_path_foil_path = f"{base}/foil_route.gpkg"
             gdf_coords_path = f"{base}/route_start_end.csv"
@@ -83,7 +84,7 @@ if __name__ == "__main__":
                 output_path="out",
                 time_limit=100.0
             )
-            print(f"Running instance osdpm_{n}_{m} …")
+            print(f"Running instance {inst_name} ...")
             map_df, op_list, objective, time_to_best = get_results(cli_args)
             map_df_path = os.path.join(cli_args.output_path, f"map_df_{n}_{m}.gpkg")
             op_list_path = os.path.join(cli_args.output_path, f"op_list_{n}_{m}.json")
@@ -92,6 +93,8 @@ if __name__ == "__main__":
             with open(op_list_path, 'w') as f:
                 json.dump(op_list, f)
             elapsed = time.monotonic() - start
-            results[f"osdpm_{n}_{m}"] = validate(basic_network_path, foil_json_path, df_path_foil_path, gdf_coords_path,
-                                           meta_data_path, map_df_path, op_list_path, objective), elapsed, time_to_best
+            print(f"Instance {inst_name} result: {objective} | {elapsed} s | {time_to_best} s")
+            results[f"{inst_name}"] = validate(basic_network_path, foil_json_path, df_path_foil_path, gdf_coords_path,
+                                               meta_data_path, map_df_path, op_list_path,
+                                               objective), elapsed, time_to_best
     save_validation_summary(results, "out/validation_summary.csv")
