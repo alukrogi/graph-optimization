@@ -9,6 +9,7 @@ from shapely import to_wkt
 import data
 from objective import create_output
 from run_lns import run_multistart_LNS
+from utility import calculate_segment_time_limit
 from validation.dataparser import convert
 from validation.validator import validate
 
@@ -16,7 +17,7 @@ from validation.validator import validate
 def get_results(cli_args: SimpleNamespace):
     full_instance_data = data.read_instance(cli_args)
     total_time_limit = cli_args.time_limit
-    segment_time_limit = (total_time_limit * 0.99 - 7) / 3.0  # three segments + space for overhead
+    segment_time_limit = calculate_segment_time_limit(total_time_limit)  # three segments + space for overhead
     solution, time_to_best = run_multistart_LNS(full_instance_data, segment_time_limit)
 
     op_list, map_df = create_output(

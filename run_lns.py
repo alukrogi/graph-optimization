@@ -95,7 +95,7 @@ def run_multistart_LNS(full_instance_data: FullInstanceData, segment_time_limit:
 
 def main():
     total_time_limit = 30.0
-    segment_time_limit = (total_time_limit * 0.99 - 5) / 3.0  # three segments + space for overhead
+    segment_time_limit = calculate_segment_time_limit(total_time_limit)
     res_list = []
     wall_clocks = []
     times = []

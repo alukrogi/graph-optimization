@@ -16,7 +16,7 @@ from validation.dataparser import convert
 def get_results(cli_args: Namespace):
     full_instance_data = data.read_instance(cli_args)
     total_time_limit = cli_args.time_limit
-    segment_time_limit = (total_time_limit * 0.99 - 5) / 3.0  # three segments + space for overhead
+    segment_time_limit = calculate_segment_time_limit(total_time_limit)
     solution, time_to_best = run_multistart_LNS(full_instance_data, segment_time_limit)
 
     op_list, map_df = create_output(

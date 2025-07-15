@@ -116,3 +116,7 @@ ABSENT_COEFFICIENT = 2 ** 16
 
 def node_path_to_edges(path: Iterable[NodeName]):
     return [(u, v, 0) for u, v in itertools.pairwise(path)]
+
+def calculate_segment_time_limit(total_time_limit: float):
+    # three segments + space for overhead
+    return ((total_time_limit - 5) if total_time_limit < 30 else (total_time_limit * 0.99 - 10)) / 3.0
