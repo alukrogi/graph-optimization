@@ -58,17 +58,24 @@ def cancel_l_add_r(changes: Iterable[Modification], fixed_changes: Iterable[Modi
             objective = compute_objective(instance, new_changes, new_route)
             return Solution(new_changes, objective, new_route), to_cancel
     objective = compute_objective(instance, new_changes, new_route)
+    invalid_mods: set[Modification] = set()
     i = 0
     while i < r:
         if timer.out():
             return Solution(new_changes, objective, new_route), to_cancel
-        modifications = list(modification_manager.get_modifications(new_changes, new_route, foil_route, False))
-        if len(modifications) == 0:
+        modifications = list(modification_manager.get_modifications(
+            new_changes, new_route, foil_route, False
+        ))
+        candidates = [m for m in modifications if m not in invalid_mods]
+        if not candidates:
             break
-        modification = random.sample(modifications, k=1)[0]
-        tmp_changes = tuple(itertools.chain(new_changes, modification))
+
+        modification = random.choice(candidates)
+        tmp_changes = tuple(itertools.chain(new_changes, (modification,)))
         tmp_route = find_path(graph, user_model, begin, end, tmp_changes)
         if tmp_route is None:
+            # record this mod as invalid so we won't retry it
+            invalid_mods.add(modification)
             continue
         objective = compute_objective(instance, tmp_changes, tmp_route)
         i += 1
@@ -247,9 +254,13 @@ def clean_up(current_candidate: Solution, fixed_changes: Iterable[Modification],
         distance = route_difference(foil_route, new_route, graph)
         if distance <= delta:
             useless.append(change)
-    current_candidate.encoding = tuple(x for x in current_candidate.encoding if x not in useless)
-    current_candidate.route = find_path(graph, user_model, begin, end, current_candidate.encoding)
-    current_candidate.objective = compute_objective(instance, current_candidate.encoding, current_candidate.route)
+    pruned_encoding = tuple(x for x in current_candidate.encoding if x not in useless)
+    final_route = find_path(graph, user_model, begin, end, pruned_encoding)
+    if final_route is None:
+        return current_candidate
+    current_candidate.encoding = pruned_encoding
+    current_candidate.route = final_route
+    current_candidate.objective = compute_objective(instance, pruned_encoding, final_route)
     return current_candidate
 
 
