@@ -6,8 +6,6 @@ from collections.abc import Iterable
 from copy import copy
 from typing import Callable
 
-from networkx import MultiGraph
-
 from LNS_modifications import HeuristicModifications
 from graph_types import Edge
 from objective import compute_objective, find_path_fast, route_difference, compare_objectives
@@ -293,41 +291,26 @@ def make_candidate(instance: Instance, changes: Iterable[Modification]):
     return Solution(changes, compute_objective(instance, changes, route), route)
 
 
-def can_change(graph: MultiGraph, edge: Edge, change_type: str):
-    if change_type == 'obstacle_free_width_float':
-        return True
-    elif 'curb_height_max' not in graph[edge[0]][edge[1]][0].keys():
-        return False
-    elif graph[edge[0]][edge[1]][0]['curb_height_max'] is None:
-        return False
-    return False
-
-
-def prohibit_adjacent_edges(instance: Instance):
+def prohibit_adjacent_edges(
+        instance: Instance,
+        mod_mgr: HeuristicModifications
+) -> tuple[Modification, ...]:
+    """
+    Return all (edge, attribute) modifications that would 'forbid' an initially-feasible
+    edge whose *start* node is in the foil_route and whose *end* node is not.
+    """
     graph = instance.graph.inner
-    user_model = instance.user_model
     foil_route = instance.foil_route
-    change_type = 0
-    if user_model.minimum_width > 0.6:
-        change_type = 'obstacle_free_width_float'
-    elif user_model.maximum_height < 0.2:
-        change_type = 'curb_height_max'
-    if change_type == 0:
-        return tuple()
-    foil_nodes = dict()
-    for edge in foil_route:
-        foil_nodes[edge[0]] = 0
-        foil_nodes[edge[1]] = 0
-    adjacent_edges = []
-    for edge in graph.edges():
-        if can_change(graph, edge, change_type):
-            if edge[0] in foil_nodes and edge[1] not in foil_nodes:
-                adjacent_edges.append(((edge[0], edge[1], 0), change_type))
-            elif edge[1] in foil_nodes and edge[0] not in foil_nodes:
-                adjacent_edges.append(((edge[0], edge[1], 0), change_type))
-        else:
-            continue
-    return tuple(adjacent_edges)
+    foil_nodes = {u for u, v, _ in foil_route} | {v for u, v, _ in foil_route}
+
+    adjacent = []
+    for edge in graph.edges(keys=True):
+        u, v, _ = edge
+        if (u in foil_nodes) and not (v in foil_nodes):
+            for attr in mod_mgr.forbid(edge):
+                adjacent.append((edge, attr))
+
+    return tuple(adjacent)
 
 
 def _repair_and_update(
@@ -415,7 +398,7 @@ def ls_destruction(current_candidate: Solution, instance: Instance, modification
 
 def LNS(full_instance_data: FullInstanceData, timer: Timer, destroy_operators: list[Callable],
         preprocess_operators: list[Callable],
-        in_best_candidate: Solution | None, in_current_candidate: Solution | None, prev_best_candidate: Solution | None,
+        global_best_seed: Solution | None, incumbent_seed: Solution | None, local_best_seed: Solution | None,
         pop_based_threshold=None):
     instance = full_instance_data.instance
     user_model = instance.user_model
@@ -425,23 +408,25 @@ def LNS(full_instance_data: FullInstanceData, timer: Timer, destroy_operators: l
     modification_manager = HeuristicModifications(instance.graph, user_model.minimum_width,
                                                   user_model.maximum_height, user_model.path_preference)
     fixed_changes = tuple(make_foil_feasible(instance))
-    if in_current_candidate is not None:
-        current_candidate = copy(in_current_candidate)
+    if incumbent_seed is not None:
+        current_candidate = copy(incumbent_seed)
     else:
         current_candidate = make_candidate(instance, fixed_changes)
     current_candidate = greedy_repair(current_candidate, fixed_changes, instance, modification_manager, timer,
                                       n_range=range(1, 2))
-    if in_best_candidate is not None:
-        common_changes = tuple(change for change in current_candidate.encoding if change in in_best_candidate.encoding)
+    if global_best_seed is not None:
+        common_changes = tuple(change for change in current_candidate.encoding if change in global_best_seed.encoding)
         current_candidate = make_candidate(instance, common_changes)
         current_candidate = greedy_repair(current_candidate, fixed_changes, instance, modification_manager, timer,
                                           n_range=range(1, 2))
-    if prev_best_candidate is not None:
-        best_candidate = update_best(current_candidate, prev_best_candidate, full_instance_data,
-                                     timer)
+    if local_best_seed is not None:
+        best_candidate = update_best(current_candidate, local_best_seed, full_instance_data, timer)
     else:
-        best_candidate = update_best(current_candidate, None, full_instance_data,
-                                     timer)
+        # fallback: build a “backup” from the prohibit_adjacent_edges operators
+        adjacent = prohibit_adjacent_edges(instance, modification_manager) + fixed_changes
+        backup_candidate = make_candidate(instance, adjacent)
+        best_candidate = update_best(backup_candidate, None, full_instance_data, timer)
+        best_candidate = update_best(current_candidate, best_candidate, full_instance_data, timer)
     while True:
         if timer.should_log(5.0):
             elapsed = timer.elapsed()

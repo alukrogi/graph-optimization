@@ -62,6 +62,24 @@ class ModificationGenerator:
             # feasibility is fixed but can be made preferred
             return ('path_type',) if not (initially_preferred or 'path_type' in changes) and can_change_type else ()
 
+    def forbid(self, edge_name: Edge):
+        edge = self._graph.get_edge_data(edge_name)
+        width: float = edge['obstacle_free_width_float']
+        height: float | None = edge.get('curb_height_max', None)
+        path_type: PathType = edge['path_type']
+        can_change_type = path_type == 'walk' or path_type == 'bike'
+        initially_feasible = width >= self._width and (height is None or height <= self._height)
+        initially_preferred = path_type == self._path_type
+        if not initially_feasible:
+            return ()
+        if self._can_narrow:
+            return ('obstacle_free_width_float',)
+        if self._can_raise and height is not None:
+            return ('curb_height_max',)
+        if initially_preferred and can_change_type:
+            return ('path_type',)
+        return ()
+
 
 class HeuristicModifications(ModificationGenerator):
     def get_modifications(self, current_solution: Iterable[Modification],
