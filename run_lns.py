@@ -13,7 +13,7 @@ from LNS import (
     ls_destruct_construct,
     clean_up_construct,
 )
-from utility import Timer, FullInstanceData, Solution
+from utility import Timer, FullInstanceData, Solution, calculate_segment_time_limit
 
 
 def run_LNS(args):

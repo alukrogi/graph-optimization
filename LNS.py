@@ -71,7 +71,7 @@ def cancel_l_add_r(changes: Iterable[Modification], fixed_changes: Iterable[Modi
             break
 
         modification = random.choice(candidates)
-        tmp_changes = tuple(itertools.chain(new_changes, (modification,)))
+        tmp_changes = tuple(itertools.chain(new_changes, modification))
         tmp_route = find_path(graph, user_model, begin, end, tmp_changes)
         if tmp_route is None:
             # record this mod as invalid so we won't retry it

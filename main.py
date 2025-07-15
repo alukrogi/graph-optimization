@@ -10,6 +10,7 @@ from shapely import to_wkt
 import data
 from objective import create_output
 from run_lns import run_multistart_LNS
+from utility import calculate_segment_time_limit
 from validation.dataparser import convert
 
 
