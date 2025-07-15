@@ -95,7 +95,9 @@ whereas
 our optimization routines operate on the **entire** graph. If a data contains multiple disconnected components, this
 mismatch may cause discrepancies in validation results._
 
-- **Graph directionality mismatch in modifications:** Our optimization process applies changes directly to the directed
-  `MultiDiGraph`, whereas the validation pipeline and the output operator list treat the graph as undirected (applying
-  each modification to both directions of a bi‑directional edge). This inconsistency can introduce additional
-  discrepancies.  
+- **Graph directionality mismatch in modifications:** All our experiments have been conducted in “directional”
+  mode—modifications affect only the specified (u→v) edges—whereas the validation pipeline and output operator list
+  assume an undirected graph, mirroring each change onto both directions of any bi‑directional edge, potentially causing
+  discrepancies. We’ve now added a `directional: bool` flag in `objective.py` (default`False` corresponding to the
+  submission template) to enable “undirectional” optimization (i.e. automatic dual‑direction updates) when set to `False`.  
+

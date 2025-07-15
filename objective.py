@@ -123,13 +123,14 @@ def find_path(initial_G: TypedMultiGraph, pertubations: Iterable[Modification],
 
 
 def find_path_fast(graph: TypedMultiGraph, user_model: UserModel,
-                   origin_node: NodeName, dest_node: NodeName, encoding: Iterable[Modification]):
-    _modify_graph(graph, user_model, encoding)
+                   origin_node: NodeName, dest_node: NodeName, encoding: Iterable[Modification],
+                   directional: bool = False):
+    _modify_graph(graph, user_model, encoding, directional)
     removed = _remove_edges_saving(graph)
     router = Router()
     route = router.get_route(graph, origin_node, dest_node)
     _restore_edges(graph, removed)
-    _restore_graph(graph, user_model, encoding)
+    _restore_graph(graph, user_model, encoding, directional)
     return route
 
 
@@ -228,26 +229,34 @@ def _remove_edges(G: TypedMultiGraph):
     return G
 
 
-def _modify_graph(graph: TypedMultiGraph, user_model: UserModel, encoding: Iterable[Modification]):
+def _modify_graph(graph: TypedMultiGraph, user_model: UserModel, encoding: Iterable[Modification], directional: bool):
     for edge, attribute in encoding:
-        edge_attrs = graph.get_edge_data(edge)
-        if attribute == 'path_type':
-            if user_model.path_preference == edge_attrs['path_type']:
-                edge_attrs['my_weight'] /= user_model.preference_weight
+        edges_to_modify = [edge]
+        if not directional:
+            u, v, _ = edge
+            if graph.inner.has_edge(v, u):
+                for rev_idx in graph.inner[v][u]:
+                    edges_to_modify.append((v, u, rev_idx))
+
+        for e in edges_to_modify:
+            edge_attrs = graph.get_edge_data(e)
+            if attribute == 'path_type':
+                if user_model.path_preference == edge_attrs['path_type']:
+                    edge_attrs['my_weight'] /= user_model.preference_weight
+                else:
+                    edge_attrs['my_weight'] *= user_model.preference_weight
+            elif attribute == 'curb_height_max':
+                if edge_attrs['curb_height_max'] > user_model.maximum_height:
+                    edge_attrs['include'] = 1
+                else:
+                    edge_attrs['include'] = 0
+            elif attribute == 'obstacle_free_width_float':
+                if edge_attrs['obstacle_free_width_float'] < user_model.minimum_width:
+                    edge_attrs['include'] = 1
+                else:
+                    edge_attrs['include'] = 0
             else:
-                edge_attrs['my_weight'] *= user_model.preference_weight
-        elif attribute == 'curb_height_max':
-            if edge_attrs['curb_height_max'] > user_model.maximum_height:
-                edge_attrs['include'] = 1
-            else:
-                edge_attrs['include'] = 0
-        elif attribute == 'obstacle_free_width_float':
-            if edge_attrs['obstacle_free_width_float'] < user_model.minimum_width:
-                edge_attrs['include'] = 1
-            else:
-                edge_attrs['include'] = 0
-        else:
-            assert False
+                assert False
 
 
 def _modify_graph2(graph: TypedMultiGraph, user_model: UserModel, encoding: Iterable[Modification]):
@@ -294,26 +303,34 @@ def _restore_graph2(graph: TypedMultiGraph, user_model: UserModel, encoding: Ite
             assert False
 
 
-def _restore_graph(graph: TypedMultiGraph, user_model: UserModel, encoding: Iterable[Modification]):
+def _restore_graph(graph: TypedMultiGraph, user_model: UserModel, encoding: Iterable[Modification], directional: bool):
     for edge, attribute in encoding:
-        edge_attrs = graph.get_edge_data(edge)
-        if attribute == 'path_type':
-            if user_model.path_preference == edge_attrs['path_type']:
-                edge_attrs['my_weight'] *= user_model.preference_weight
+        edges_to_restore = [edge]
+        if not directional:
+            u, v, _ = edge
+            if graph.inner.has_edge(v, u):
+                for rev_idx in graph.inner[v][u]:
+                    edges_to_restore.append((v, u, rev_idx))
+
+        for e in edges_to_restore:
+            edge_attrs = graph.get_edge_data(e)
+            if attribute == 'path_type':
+                if user_model.path_preference == edge_attrs['path_type']:
+                    edge_attrs['my_weight'] *= user_model.preference_weight
+                else:
+                    edge_attrs['my_weight'] /= user_model.preference_weight
+            elif attribute == 'curb_height_max':
+                if edge_attrs['curb_height_max'] > user_model.maximum_height:
+                    edge_attrs['include'] = 0
+                else:
+                    edge_attrs['include'] = 1
+            elif attribute == 'obstacle_free_width_float':
+                if edge_attrs['obstacle_free_width_float'] < user_model.minimum_width:
+                    edge_attrs['include'] = 0
+                else:
+                    edge_attrs['include'] = 1
             else:
-                edge_attrs['my_weight'] /= user_model.preference_weight
-        elif attribute == 'curb_height_max':
-            if edge_attrs['curb_height_max'] > user_model.maximum_height:
-                edge_attrs['include'] = 0
-            else:
-                edge_attrs['include'] = 1
-        elif attribute == 'obstacle_free_width_float':
-            if edge_attrs['obstacle_free_width_float'] < user_model.minimum_width:
-                edge_attrs['include'] = 0
-            else:
-                edge_attrs['include'] = 1
-        else:
-            assert False
+                assert False
 
 
 def _remove_edges_saving(graph: TypedMultiGraph):
