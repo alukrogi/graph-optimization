@@ -18,28 +18,30 @@ def create_output(dataframe: GeoDataFrame, graph: TypedMultiGraph, user_model: U
         edge_attrs = graph.get_edge_data(edge)
         row = dataframe.iloc[edge_attrs['index_position']]
         row_id = edge_attrs['index_position']
-        # print(row_id)
         if attribute == 'path_type':
-            if edge_attrs['path_type'] == 'walk':
+            current_path_type = edge_attrs['path_type']
+            weight_coeff = 1.0 / user_model.preference_weight if (
+                    user_model.path_preference == current_path_type) else user_model.preference_weight
+            if current_path_type == 'walk':
                 result_df.at[row_id, 'path_type'] = 'bike'
-                result_df.at[row_id, 'my_weight'] = result_df.at[row_id, 'my_weight'] / user_model.preference_weight
+                result_df.at[row_id, 'my_weight'] = result_df.at[row_id, 'my_weight'] * weight_coeff
                 result.append(('modify_path_type', (edge_attrs['index_position'], row.geometry), 'bike', 'success'))
             else:
                 result.append(('modify_path_type', (edge_attrs['index_position'], row.geometry), 'walk', 'success'))
                 result_df.at[row_id, 'path_type'] = 'walk'
-                result_df.at[row_id, 'my_weight'] = result_df.at[row_id, 'my_weight'] * user_model.preference_weight
+                result_df.at[row_id, 'my_weight'] = result_df.at[row_id, 'my_weight'] * weight_coeff
         elif attribute == 'curb_height_max':
             if edge_attrs['curb_height_max'] > user_model.maximum_height:
                 if result_df.at[row_id, 'include'] == 0:
                     if 'obstacle_free_width_float' in edge_attrs.keys():
                         if edge_attrs['obstacle_free_width_float'] is not None:
-                            if edge_attrs['obstacle_free_width_float'] > user_model.minimum_width:
+                            if edge_attrs['obstacle_free_width_float'] >= user_model.minimum_width:
                                 result_df.at[row_id, 'include'] = 1
                         else:
                             result_df.at[row_id, 'include'] = 1
                     else:
                         result_df.at[row_id, 'include'] = 1
-                result_df.at[row_id, 'curb_height_max'] = 0
+                result_df.at[row_id, 'curb_height_max'] = 0.0
                 result.append(('sub_curb_height', (edge_attrs['index_position'], row.geometry),
                                edge_attrs['curb_height_max'], 'success'))
             else:
@@ -53,15 +55,15 @@ def create_output(dataframe: GeoDataFrame, graph: TypedMultiGraph, user_model: U
                 if result_df.at[row_id, 'include'] == 0:
                     if 'curb_height_max' in edge_attrs.keys():
                         if edge_attrs['curb_height_max'] is not None:
-                            if edge_attrs['curb_height_max'] < user_model.maximum_height:
+                            if edge_attrs['curb_height_max'] <= user_model.maximum_height:
                                 result_df.at[row_id, 'include'] = 1
                         else:
                             result_df.at[row_id, 'include'] = 1
                     else:
                         result_df.at[row_id, 'include'] = 1
-                result_df.at[row_id, 'obstacle_free_width_float'] = 2
+                result_df.at[row_id, 'obstacle_free_width_float'] = 2.0
                 result.append(('add_width', (edge_attrs['index_position'], row.geometry),
-                               2 - edge_attrs['obstacle_free_width_float'], 'success'))
+                               2.0 - edge_attrs['obstacle_free_width_float'], 'success'))
             else:
                 if result_df.at[row_id, 'include'] == 1:
                     result_df.at[row_id, 'include'] = 0
