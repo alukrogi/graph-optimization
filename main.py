@@ -18,7 +18,7 @@ def get_results(cli_args: Namespace):
     full_instance_data = data.read_instance(cli_args)
     total_time_limit = cli_args.time_limit
     segment_time_limit = calculate_segment_time_limit(total_time_limit)
-    solution, time_to_best = run_multistart_LNS(full_instance_data, segment_time_limit)
+    solution, time_to_best = run_multistart_LNS(full_instance_data, segment_time_limit, cli_args.n_workers)
 
     op_list, map_df = create_output(
         full_instance_data.df,
@@ -51,7 +51,8 @@ if __name__ == "__main__":
     parser.add_argument("--df_path_foil_path", type=str, required=True)
     parser.add_argument("--gdf_coords_path", type=str, required=True)
     parser.add_argument("--output_path", type=str, required=True)
-    parser.add_argument("--time_limit", type=str, default=300.0)
+    parser.add_argument("--time_limit", type=float, default=300.0)
+    parser.add_argument("--n_workers", type=int, default=max(1, (os.cpu_count() or 1) - 1))
     args = parser.parse_args()
 
     map_df, op_list = get_results(args)

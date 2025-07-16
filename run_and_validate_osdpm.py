@@ -18,7 +18,7 @@ def get_results(cli_args: SimpleNamespace):
     full_instance_data = data.read_instance(cli_args)
     total_time_limit = cli_args.time_limit
     segment_time_limit = calculate_segment_time_limit(total_time_limit)  # three segments + space for overhead
-    solution, time_to_best = run_multistart_LNS(full_instance_data, segment_time_limit)
+    solution, time_to_best = run_multistart_LNS(full_instance_data, segment_time_limit, cli_args.n_workers)
 
     op_list, map_df = create_output(
         full_instance_data.df,
@@ -82,7 +82,8 @@ if __name__ == "__main__":
                 gdf_coords_path=gdf_coords_path,
                 meta_data_path=meta_data_path,
                 output_path="out",
-                time_limit=100.0
+                time_limit=100.0,
+                n_workers=max(1, (os.cpu_count() or 1) - 1)
             )
             print(f"Running instance {inst_name} ...")
             map_df, op_list, objective, time_to_best = get_results(cli_args)

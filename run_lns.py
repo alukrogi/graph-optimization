@@ -56,9 +56,8 @@ def get_best_candidate(results: Iterable[dict[str, Any]]):
     )
 
 
-def run_multistart_LNS(full_instance_data: FullInstanceData, segment_time_limit: float):
+def run_multistart_LNS(full_instance_data: FullInstanceData, segment_time_limit: float, n_workers: int):
     timer = Timer(segment_time_limit)
-    n_workers = cpu_count() or 1
     jobs1 = n_workers // 2
     jobs2 = n_workers - jobs1
 
@@ -85,6 +84,7 @@ def run_multistart_LNS(full_instance_data: FullInstanceData, segment_time_limit:
         # Stage 1 & 2: refine around the best found so far
         for i in range(2):
             best = get_best_candidate(res)
+            print(f"Current result: {timer.elapsed()} s | {best.objective}")
             timer.postpone((segment_time_limit * 3 - timer.elapsed()) / (2 - i))
             args = prepare_input(full_instance_data, operators, thresholds, best, res, jobs1, jobs2, timer)
             res = pool.map(run_LNS, args)
@@ -95,6 +95,7 @@ def run_multistart_LNS(full_instance_data: FullInstanceData, segment_time_limit:
 
 def main():
     total_time_limit = 30.0
+    n_workers = max(1, (cpu_count() or 1) - 1)
     segment_time_limit = calculate_segment_time_limit(total_time_limit)
     res_list = []
     wall_clocks = []
@@ -104,7 +105,7 @@ def main():
         print(f"→ Running instance {instance_id} …")
         t0 = time.monotonic()
         full_instance_data = data.read_instance2(4, instance_id)
-        sol, time_to_best = run_multistart_LNS(full_instance_data, segment_time_limit)
+        sol, time_to_best = run_multistart_LNS(full_instance_data, segment_time_limit,n_workers)
         dur = time.monotonic() - t0
         print(f"    • Best objective={sol.objective}   (wall-clock {dur:.1f}s, time_to_best {time_to_best:.2f}s)")
         res_list.append(sol)
