@@ -90,6 +90,7 @@ def run_multistart_LNS(full_instance_data: FullInstanceData, segment_time_limit:
             res = pool.map(run_LNS, args)
 
     best_entry = min(res, key=lambda r: r['candidate'].objective)
+    print(f"Final result: {timer.elapsed()} s | {best_entry['candidate'].objective}")
     return best_entry['candidate'], best_entry['time_to_best']
 
 

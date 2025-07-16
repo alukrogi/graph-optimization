@@ -408,7 +408,8 @@ def fallback(best_candidate: Solution, fixed_changes: tuple[Modification],
 def LNS(full_instance_data: FullInstanceData, timer: Timer, destroy_operators: list[Callable],
         preprocess_operators: list[Callable],
         global_best_seed: Solution | None, incumbent_seed: Solution | None, local_best_seed: Solution | None,
-        pop_based_threshold=None):
+        pop_based_threshold=None,
+        verbose: bool = False):
     instance = full_instance_data.instance
     user_model = instance.user_model
     if pop_based_threshold is None:
@@ -433,7 +434,7 @@ def LNS(full_instance_data: FullInstanceData, timer: Timer, destroy_operators: l
     else:
         best_candidate = update_best(current_candidate, None, full_instance_data, timer)
     while not timer.out():
-        if timer.should_log(5.0):
+        if verbose and timer.should_log(5.0):
             elapsed = timer.elapsed()
             proc = multiprocessing.current_process()
             best = best_candidate.objective
