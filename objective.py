@@ -7,11 +7,50 @@ import utility
 from graph_types import Edge, NodeName, TypedMultiGraph
 from router import Router
 from utility import Instance, Modification, UserModel, Objective
+from validation.dataparser import handle_weight_with_recovery
+from validation.graph_op import pertub_with_op_list, graphOperator
+
+
+def create_output(df: GeoDataFrame, graph: TypedMultiGraph, metadata_user_model,
+                  encoding: Iterable[Modification]):
+    maximum_height = metadata_user_model["max_curb_height"]
+    minimum_width = metadata_user_model["min_sidewalk_width"]
+    op_list: list[tuple[str, tuple[int, Any], float | str, Literal['success']]] = []
+    for edge, attribute in encoding:
+        edge_attrs = graph.get_edge_data(edge)
+        row = df.iloc[edge_attrs['index_position']]
+        if attribute == 'path_type':
+            current_path_type = edge_attrs['path_type']
+            if current_path_type == 'walk':
+                op_list.append(
+                    ('modify_path_type', (edge_attrs['index_position'], row.geometry), 'bike', 'success'))
+            else:
+                op_list.append(
+                    ('modify_path_type', (edge_attrs['index_position'], row.geometry), 'walk', 'success'))
+        elif attribute == 'curb_height_max':
+            if edge_attrs['curb_height_max'] > maximum_height:
+                op_list.append(('sub_curb_height', (edge_attrs['index_position'], row.geometry),
+                                edge_attrs['curb_height_max'], 'success'))
+            else:
+                op_list.append(('add_curb_height', (edge_attrs['index_position'], row.geometry),
+                                0.2 - edge_attrs['curb_height_max'], 'success'))
+        elif attribute == 'obstacle_free_width_float':
+            if edge_attrs['obstacle_free_width_float'] < minimum_width:
+                op_list.append(('add_width', (edge_attrs['index_position'], row.geometry),
+                                2.0 - edge_attrs['obstacle_free_width_float'], 'success'))
+            else:
+                op_list.append(('sub_width', (edge_attrs['index_position'], row.geometry),
+                                edge_attrs['obstacle_free_width_float'] - 0.6, 'success'))
+
+    graph_operator = graphOperator()
+    df_p, result_op_list = pertub_with_op_list(graph_operator, op_list, df)
+    result_df = handle_weight_with_recovery(df_p, metadata_user_model)
+    return result_df, result_op_list
 
 
 @no_type_check
-def create_output(dataframe: GeoDataFrame, graph: TypedMultiGraph, user_model: UserModel,
-                  encoding: Iterable[Modification]):
+def create_output2(dataframe: GeoDataFrame, graph: TypedMultiGraph, user_model: UserModel,
+                   encoding: Iterable[Modification]):
     result_df = dataframe.copy()
     result: list[tuple[str, tuple[int, Any], float | str, Literal['success']]] = []
     for edge, attribute in encoding:
@@ -72,7 +111,7 @@ def create_output(dataframe: GeoDataFrame, graph: TypedMultiGraph, user_model: U
                                edge_attrs['obstacle_free_width_float'] - 0.6, 'success'))
         else:
             assert False
-    return result, result_df
+    return result_df, result
 
 
 def to_dataframe(dataframe: GeoDataFrame, graph: TypedMultiGraph, route: Iterable[Edge]):

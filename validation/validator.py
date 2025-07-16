@@ -46,7 +46,8 @@ def validate_solution(solution: Solution, full_instance_data: FullInstanceData):
     attrs_variable_names = user_model["attrs_variable_names"]
     route_error_delta = user_model["route_error_threshold"]
 
-    op_list, _ = create_output(full_instance_data.df, instance.graph, instance.user_model, solution.encoding)
+    _, op_list = create_output(full_instance_data.df, instance.graph, full_instance_data.meta_data["user_model"],
+                               solution.encoding)
 
     operator = graphOperator()
     df_p, op = pertub_with_op_list(operator, op_list, df_copy)

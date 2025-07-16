@@ -20,10 +20,10 @@ def get_results(cli_args: Namespace):
     segment_time_limit = calculate_segment_time_limit(total_time_limit)
     solution, time_to_best = run_multistart_LNS(full_instance_data, segment_time_limit, cli_args.n_workers)
 
-    op_list, map_df = create_output(
+    map_df, op_list = create_output(
         full_instance_data.df,
         full_instance_data.instance.graph,
-        full_instance_data.instance.user_model,
+        full_instance_data.meta_data["user_model"],
         solution.encoding
     )
 
@@ -55,5 +55,5 @@ if __name__ == "__main__":
     parser.add_argument("--n_workers", type=int, default=max(1, (os.cpu_count() or 1) - 1))
     args = parser.parse_args()
 
-    map_df, op_list = get_results(args)
-    store_results(args.output_path, map_df, op_list)
+    result_map_df, result_op_list = get_results(args)
+    store_results(args.output_path, result_map_df, result_op_list)

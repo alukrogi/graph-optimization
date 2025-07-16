@@ -20,10 +20,10 @@ def get_results(cli_args: SimpleNamespace):
     segment_time_limit = calculate_segment_time_limit(total_time_limit)  # three segments + space for overhead
     solution, time_to_best = run_multistart_LNS(full_instance_data, segment_time_limit, cli_args.n_workers)
 
-    op_list, map_df = create_output(
+    map_df, op_list = create_output(
         full_instance_data.df,
         full_instance_data.instance.graph,
-        full_instance_data.instance.user_model,
+        full_instance_data.meta_data["user_model"],
         solution.encoding
     )
 
@@ -86,13 +86,13 @@ if __name__ == "__main__":
                 n_workers=max(1, (os.cpu_count() or 1) - 1)
             )
             print(f"Running instance {inst_name} ...")
-            map_df, op_list, objective, time_to_best = get_results(cli_args)
+            result_map_df, result_op_list, objective, time_to_best = get_results(cli_args)
             map_df_path = os.path.join(cli_args.output_path, f"map_df_{n}_{m}.gpkg")
             op_list_path = os.path.join(cli_args.output_path, f"op_list_{n}_{m}.json")
 
-            map_df.to_file(map_df_path, driver='GPKG')
+            result_map_df.to_file(map_df_path, driver='GPKG')
             with open(op_list_path, 'w') as f:
-                json.dump(op_list, f)
+                json.dump(result_op_list, f)
             elapsed = time.monotonic() - start
             print(f"Instance {inst_name} result: {objective} | {elapsed} s | {time_to_best} s")
             results[f"{inst_name}"] = validate(basic_network_path, foil_json_path, df_path_foil_path, gdf_coords_path,
