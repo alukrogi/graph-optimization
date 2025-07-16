@@ -270,14 +270,20 @@ def _remove_edges(G: TypedMultiGraph):
     return G
 
 
+def _get_edges_to_modify(
+        graph: TypedMultiGraph, edge: Edge, directional: bool) -> list[Edge]:
+    edges_to_modify = [edge]
+    if not directional:
+        u, v, _ = edge
+        if graph.inner.has_edge(v, u):
+            for rev_idx in graph.inner[v][u]:
+                edges_to_modify.append((v, u, rev_idx))
+    return edges_to_modify
+
+
 def _modify_graph(graph: TypedMultiGraph, user_model: UserModel, encoding: Iterable[Modification], directional: bool):
     for edge, attribute in encoding:
-        edges_to_modify = [edge]
-        if not directional:
-            u, v, _ = edge
-            if graph.inner.has_edge(v, u):
-                for rev_idx in graph.inner[v][u]:
-                    edges_to_modify.append((v, u, rev_idx))
+        edges_to_modify = _get_edges_to_modify(graph, edge, directional)
 
         for e in edges_to_modify:
             edge_attrs = graph.get_edge_data(e)
@@ -346,12 +352,7 @@ def _restore_graph2(graph: TypedMultiGraph, user_model: UserModel, encoding: Ite
 
 def _restore_graph(graph: TypedMultiGraph, user_model: UserModel, encoding: Iterable[Modification], directional: bool):
     for edge, attribute in encoding:
-        edges_to_restore = [edge]
-        if not directional:
-            u, v, _ = edge
-            if graph.inner.has_edge(v, u):
-                for rev_idx in graph.inner[v][u]:
-                    edges_to_restore.append((v, u, rev_idx))
+        edges_to_restore = _get_edges_to_modify(graph, edge, directional)
 
         for e in edges_to_restore:
             edge_attrs = graph.get_edge_data(e)
