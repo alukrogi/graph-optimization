@@ -82,7 +82,7 @@ if __name__ == "__main__":
                 gdf_coords_path=gdf_coords_path,
                 meta_data_path=meta_data_path,
                 output_path="out",
-                time_limit=100.0,
+                time_limit=300.0,
                 n_workers=max(1, (os.cpu_count() or 1) - 1)
             )
             print(f"Running instance {inst_name} ...")
