@@ -3,7 +3,7 @@ import heapq
 from collections.abc import Iterable
 from typing import Self
 
-from tree import Node
+from tree_search.tree import Node
 
 
 class SimpleExploration:

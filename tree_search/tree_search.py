@@ -7,7 +7,7 @@ from threading import Condition
 import greedy
 from exploration import GreedyExploration, LengthExploration
 from graph_types import Edge, EdgeAttribute, TypedMultiGraph
-from modification import AllModifications, FastModifications, ModificationManger
+from modification import FastModifications, ModificationManger
 from objective import find_path, find_path_and_length_fast, find_path_fast, route_difference
 from tree import MonteCarloNode, Node
 from utility import Instance, Modification, Solution, UserModel

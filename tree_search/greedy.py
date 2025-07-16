@@ -3,12 +3,12 @@ import random
 import typing
 from collections.abc import Iterable, Mapping, Sequence
 
-import modification
+from tree_search import modification
 from graph_types import Edge, EdgeAttribute, TypedMultiGraph
-from modification import ModificationManger
+from tree_search.modification import ModificationManger
 from objective import find_path, find_path_fast, route_difference
-from tree import MonteCarloNode, Node
-from utility import Instance, Solution, UserModel
+from tree_search.tree import MonteCarloNode, Node
+from utility import Solution, UserModel
 
 
 def random_fix(modification_manager: ModificationManger, graph: TypedMultiGraph, foil_route: Sequence[Edge],
