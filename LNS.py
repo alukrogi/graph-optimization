@@ -395,6 +395,15 @@ def ls_destruction(current_candidate: Solution, instance: Instance, modification
         current_candidate = max(neighbors, key=lambda x: x[0].objective)[0]
     return current_candidate
 
+def fallback(best_candidate: Solution, fixed_changes: tuple[Modification],
+             full_instance_data: FullInstanceData, modification_manager: HeuristicModifications, timer: Timer):
+    if best_candidate is None or best_candidate.objective[0] > 0:
+        # fallback: build a “backup” from the prohibit_adjacent_edges operators
+        instance = full_instance_data.instance
+        adjacent = prohibit_adjacent_edges(instance, modification_manager) + fixed_changes
+        backup_candidate = make_candidate(instance, adjacent)
+        return update_best(backup_candidate, best_candidate, full_instance_data, timer)
+    return best_candidate
 
 def LNS(full_instance_data: FullInstanceData, timer: Timer, destroy_operators: list[Callable],
         preprocess_operators: list[Callable],
@@ -422,12 +431,8 @@ def LNS(full_instance_data: FullInstanceData, timer: Timer, destroy_operators: l
     if local_best_seed is not None:
         best_candidate = update_best(current_candidate, local_best_seed, full_instance_data, timer)
     else:
-        # fallback: build a “backup” from the prohibit_adjacent_edges operators
-        adjacent = prohibit_adjacent_edges(instance, modification_manager) + fixed_changes
-        backup_candidate = make_candidate(instance, adjacent)
-        best_candidate = update_best(backup_candidate, None, full_instance_data, timer)
-        best_candidate = update_best(current_candidate, best_candidate, full_instance_data, timer)
-    while True:
+        best_candidate = update_best(current_candidate, None, full_instance_data, timer)
+    while not timer.out():
         if timer.should_log(5.0):
             elapsed = timer.elapsed()
             proc = multiprocessing.current_process()
@@ -446,7 +451,6 @@ def LNS(full_instance_data: FullInstanceData, timer: Timer, destroy_operators: l
                                                        modification_manager,
                                                        timer,
                                                        pop_based_threshold=pop_based_threshold)
-        if timer.out():
-            break
+    best_candidate = fallback(best_candidate, fixed_changes, full_instance_data, modification_manager, timer)
     return {'candidate': copy(best_candidate), 'current': copy(current_candidate),
             'time_to_best': timer.get_time_to_best()}
