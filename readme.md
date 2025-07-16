@@ -91,9 +91,8 @@ It also includes a brief description of proved lower bounds for the training ins
     ```
 
 _**Caution:** The validation pipeline applies subgraph‑selection (keeping only the largest connected components),
-whereas
-our optimization routines operate on the **entire** graph. If a data contains multiple disconnected components, this
-mismatch may cause discrepancies in validation results._
+whereas our optimization routines operate on the **entire** graph. If a data contains multiple disconnected components, 
+this mismatch may cause discrepancies in validation results._
 
 - **Graph directionality mismatch in modifications:** All our experiments have been conducted in “directional”
   mode—modifications affect only the specified (u→v) edges—whereas the validation pipeline and output operator list
@@ -101,3 +100,19 @@ mismatch may cause discrepancies in validation results._
   discrepancies. We’ve now added a `directional: bool` flag in `objective.py` (default`False` corresponding to the
   submission template) to enable “undirectional” optimization (i.e. automatic dual‑direction updates) when set to `False`.  
 
+- **Time-limit sensitivity:** The current implementation performs its multi-start, repair, and destroy iterations 
+ without internal early exits, which means it may struggle—or even fail to produce a valid counterfactual—under very 
+ tight time budgets (e.g., under a few seconds). However, it generally should run reliably with the 300s limit used in 
+ the competition.
+
+-  **Unused code parts:** Some modules and functions remain in the codebase but aren’t invoked in the current LNS 
+ flow—they were used in initial experiments but were not integrated into the final scheme. They’re retained for 
+ potential inclusion in future hybrid approaches.
+
+- **`mip.py` reference:** The `mip.py` file contains a MIP formulation of the “directional” problem. It isn’t invoked by 
+ the LNS runner and is provided mainly as an optional reference for alternative methods.
+
+- **Validation toggle (`apply_validate`):** By default, every solution is passed through `validate_solution` to catch 
+ inconsistencies. If you need to skip this step, open **LNS.py** and, in the `update_best(...)` function, set 
+ `apply_validate=False`. There’s no config option—validation is assumed mandatory, so disable it in the source only if
+ validation step doesn’t match your intended evaluation procedure.
