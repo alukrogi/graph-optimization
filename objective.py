@@ -145,15 +145,15 @@ def find_path_fast2(graph: TypedMultiGraph, user_model: UserModel,
 
 def find_path_and_length_fast(graph: TypedMultiGraph, user_model: UserModel, foil_path: Iterable[Edge],
                               encoding: Iterable[Modification], origin_node: NodeName,
-                              dest_node: NodeName):
-    _modify_graph(graph, user_model, encoding)
+                              dest_node: NodeName, directional: bool = False):
+    _modify_graph(graph, user_model, encoding, directional)
     removed = _remove_edges_saving(graph)
     router = Router()
     route = router.get_route(graph, origin_node, dest_node)
     foil_len = _route_length(graph, foil_path)
     fact_len = _route_length(graph, route)
     _restore_edges(graph, removed)
-    _restore_graph(graph, user_model, encoding)
+    _restore_graph(graph, user_model, encoding, directional)
     return route, foil_len, fact_len
 
 
