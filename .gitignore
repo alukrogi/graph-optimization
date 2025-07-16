@@ -205,3 +205,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Experiment output files
+out/*.gpkg
+out/*.json
+out/*.csv
