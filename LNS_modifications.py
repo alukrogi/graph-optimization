@@ -1,16 +1,12 @@
 import itertools
-import typing
-from collections.abc import Iterable, Mapping
-from typing import Any
+from collections.abc import Iterable
 
-from networkx import Graph
-
-from graph_types import Edge, EdgeAttribute, PathType
+from graph_types import Edge, EdgeAttribute, PathType, TypedMultiGraph
 from utility import Modification
 
 
 class ModificationGenerator:
-    def __init__(self, graph: Graph, minimum_width: float, maximum_height: float,
+    def __init__(self, graph: TypedMultiGraph, minimum_width: float, maximum_height: float,
                  path_preference: PathType):
         self._graph = graph
         self._width = minimum_width
@@ -20,9 +16,9 @@ class ModificationGenerator:
         self._can_raise = maximum_height < 0.2
 
     def get_sensible_modifications(self, current_solution: Iterable[Modification],
-                                   current_route: Iterable[Edge], edge_name: Edge, foil_route):
+                                   current_route: Iterable[Edge], edge_name: Edge):
         """Returns a sensible sequence of attributes that need to be changed to modify the edge"""
-        edge = typing.cast(Mapping[EdgeAttribute, Any], self._graph.edges[edge_name])
+        edge = self._graph.get_edge_data(edge_name)
         width: float = edge['obstacle_free_width_float']
         height: float | None = edge.get('curb_height_max', None)
         path_type: PathType = edge['path_type']
@@ -83,26 +79,23 @@ class ModificationGenerator:
 
 class HeuristicModifications(ModificationGenerator):
     def get_modifications(self, current_solution: Iterable[Modification],
-                          current_route: Iterable[Edge], foil_route: Iterable[Edge], swapping: bool, true_foil=0):
-        if true_foil == 0:
+                          current_route: Iterable[Edge], foil_route: Iterable[Edge], swapping: bool,
+                          true_foil: Iterable[Edge] | None = None):
+        if true_foil is None:
             true_foil = foil_route
         if swapping:
             breaks = filter(lambda x: x,
-                            (_put_edge(edge, self.get_sensible_modifications(current_solution, current_route, edge,
-                                                                             foil_route))
+                            (_put_edge(edge, self.get_sensible_modifications(current_solution, current_route, edge))
                              for edge in current_route if edge not in foil_route))
             fixes = filter(lambda x: x,
-                           (_put_edge(edge, self.get_sensible_modifications(current_solution, current_route, edge,
-                                                                            foil_route))
+                           (_put_edge(edge, self.get_sensible_modifications(current_solution, current_route, edge))
                             for edge in []))
         else:
             breaks = filter(lambda x: x,
-                            (_put_edge(edge, self.get_sensible_modifications(current_solution, current_route, edge,
-                                                                             foil_route))
+                            (_put_edge(edge, self.get_sensible_modifications(current_solution, current_route, edge))
                              for edge in current_route if edge not in true_foil))
             fixes = filter(lambda x: x,
-                           (_put_edge(edge, self.get_sensible_modifications(current_solution, current_route, edge,
-                                                                            foil_route))
+                           (_put_edge(edge, self.get_sensible_modifications(current_solution, current_route, edge))
                             for edge in foil_route if edge not in current_route))
         return itertools.chain(breaks, fixes)
 
