@@ -265,6 +265,11 @@ def clean_up(current_candidate: Solution, fixed_changes: Iterable[Modification],
 def update_best(current_candidate: Solution, best_candidate: Solution | None, full_instance_data: FullInstanceData,
                 timer: Timer, apply_validate: bool = True):
     if best_candidate is None:
+        if apply_validate:
+            is_obj_correct, correct_obj, correct_route = validate_solution(current_candidate, full_instance_data)
+            if not is_obj_correct:
+                current_candidate.objective = correct_obj
+                current_candidate.route = correct_route
         best_candidate = copy(current_candidate)
         timer.update_time_to_best()
     elif compare_objectives(current_candidate.objective, best_candidate.objective) < 0:
