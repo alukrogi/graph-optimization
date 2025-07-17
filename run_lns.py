@@ -97,7 +97,6 @@ def run_multistart_LNS(full_instance_data: FullInstanceData, segment_time_limit:
 def main():
     total_time_limit = 30.0
     n_workers = max(1, (cpu_count() or 1) - 1)
-    segment_time_limit = calculate_segment_time_limit(total_time_limit)
     res_list = []
     wall_clocks = []
     times = []
@@ -106,6 +105,7 @@ def main():
         print(f"→ Running instance {instance_id} …")
         t0 = time.monotonic()
         full_instance_data = data.read_instance2(4, instance_id)
+        segment_time_limit = calculate_segment_time_limit(total_time_limit - (time.monotonic() - t0))
         sol, time_to_best = run_multistart_LNS(full_instance_data, segment_time_limit,n_workers)
         dur = time.monotonic() - t0
         print(f"    • Best objective={sol.objective}   (wall-clock {dur:.1f}s, time_to_best {time_to_best:.2f}s)")

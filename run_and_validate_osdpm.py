@@ -15,8 +15,10 @@ from validation.validator import validate
 
 
 def get_results(cli_args: SimpleNamespace):
+    t0 = time.monotonic()
     full_instance_data = data.read_instance(cli_args)
-    total_time_limit = cli_args.time_limit
+    read_data_time = time.monotonic() - t0
+    total_time_limit = cli_args.time_limit - read_data_time
     segment_time_limit = calculate_segment_time_limit(total_time_limit)  # three segments + space for overhead
     solution, time_to_best = run_multistart_LNS(full_instance_data, segment_time_limit, cli_args.n_workers)
 
