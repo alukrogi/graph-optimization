@@ -5,6 +5,10 @@ route becomes (near-)optimal under a user model.
 
 ## Dependencies
 
+> ⚠️ **Note:** The versions listed below are only compatible with **Python 3.12**.  
+> The code is expected to work with up-to-date versions of these libraries as well, including under **Python 3.13**, but
+> compatibility is not guaranteed.
+
 - geopandas==0.13.2
 - fiona==1.9.6
 - momepy>=0.8.1
