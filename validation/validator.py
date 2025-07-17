@@ -38,7 +38,6 @@ def read_data(basic_network_path: str, foil_json_path: str, df_path_foil_path: s
 
 def validate_solution(solution: Solution, full_instance_data: FullInstanceData):
     instance = full_instance_data.instance
-    df_copy = deepcopy(full_instance_data.df)
     df_path_foil = full_instance_data.df_path_foil
     meta_data = full_instance_data.meta_data
     user_model = meta_data["user_model"]
@@ -46,12 +45,8 @@ def validate_solution(solution: Solution, full_instance_data: FullInstanceData):
     attrs_variable_names = user_model["attrs_variable_names"]
     route_error_delta = user_model["route_error_threshold"]
 
-    _, op_list = create_output(full_instance_data.df, instance.graph, full_instance_data.meta_data["user_model"],
-                               solution.encoding)
-
-    operator = graphOperator()
-    df_p, op = pertub_with_op_list(operator, op_list, df_copy)
-    df_p = handle_weight_with_recovery(df_p, user_model)
+    df_p, op_list = create_output(full_instance_data.df, instance.graph, full_instance_data.meta_data["user_model"],
+                                  solution.encoding)
 
     _, G = create_network_graph(df_p)
     router_h = Router(heuristic='dijkstra', CRS=meta_map["CRS"], CRS_map=meta_map["CRS_map"])
