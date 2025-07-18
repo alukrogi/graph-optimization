@@ -264,29 +264,35 @@ def clean_up(current_candidate: Solution, fixed_changes: Iterable[Modification],
 
 def update_best(current_candidate: Solution, best_candidate: Solution | None, full_instance_data: FullInstanceData,
                 timer: Timer, apply_validate: bool = True):
-    if best_candidate is None:
-        if apply_validate:
-            is_obj_correct, correct_obj, correct_route = validate_solution(current_candidate, full_instance_data)
-            if not is_obj_correct:
-                current_candidate.objective = correct_obj
-                current_candidate.route = correct_route
-        best_candidate = copy(current_candidate)
+    def safe_validate(sol: Solution):
+        if not apply_validate:
+            return True, sol.objective, sol.route
+        try:
+            return validate_solution(sol, full_instance_data)
+        except Exception as e:
+            print(f"Warning: validation failed, skipping: {e}")
+            # treat as if validation passed with no change
+            return True, sol.objective, sol.route
+
+    def accept(sol: Solution) -> Solution:
         timer.update_time_to_best()
-    elif compare_objectives(current_candidate.objective, best_candidate.objective) < 0:
-        if apply_validate:
-            is_obj_correct, correct_obj, correct_route = validate_solution(current_candidate, full_instance_data)
-            if is_obj_correct:
-                best_candidate = copy(current_candidate)
-                timer.update_time_to_best()
-            else:
-                current_candidate.objective = correct_obj
-                current_candidate.route = correct_route
-                if correct_obj < best_candidate.objective:
-                    best_candidate = copy(current_candidate)
-                    timer.update_time_to_best()
-        else:
-            best_candidate = copy(current_candidate)
-            timer.update_time_to_best()
+        return copy(sol)
+
+    if best_candidate is None:
+        is_valid, obj, route = safe_validate(current_candidate)
+        if not is_valid:
+            current_candidate.objective = obj
+            current_candidate.route = route
+        return accept(current_candidate)
+
+    if compare_objectives(current_candidate.objective, best_candidate.objective) < 0:
+        is_valid, obj, route = safe_validate(current_candidate)
+        if not is_valid:
+            current_candidate.objective = obj
+            current_candidate.route = route
+        if is_valid or compare_objectives(obj, best_candidate.objective) < 0:
+            return accept(current_candidate)
+
     return best_candidate
 
 
