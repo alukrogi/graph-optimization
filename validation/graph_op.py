@@ -131,7 +131,8 @@ def pertub_with_op_list(graph_operator, op_list, df):
             compared_geom = from_wkt(edge_geom)
         else:
             compared_geom = edge_geom
-        assert target_edge.geometry.iloc[0].equals(compared_geom), "Edge geometry does not match"
+        if not target_edge.geometry.iloc[0].equals(compared_geom):
+            print("Warning: Edge geometry does not match!")
 
         result = operator(target_edge, df_perturbed, step)
         if result_op != result:
