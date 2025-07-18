@@ -95,17 +95,26 @@ def get_ca_neighbours(changes: Iterable[Modification], fixed_changes: Iterable[M
 
 
 def greedy_repair(current_candidate: Solution, fixed_changes: Iterable[Modification],
-                  instance: Instance, modification_manager: HeuristicModifications, timer: Timer, n_range=range(3, 10)):
-    tmp = []
+                  instance: Instance, modification_manager: HeuristicModifications, timer: Timer,
+                  n_range=range(3, 10), enforce_fixed_changes: bool = True):
     if current_candidate.objective[0] == 0:
         return current_candidate
-    for change in fixed_changes:
-        if change not in current_candidate.encoding:
-            tmp.append(change)
-    current_candidate = make_candidate(instance, current_candidate.encoding + tuple(tmp))
+    if enforce_fixed_changes:
+        missing = set(fixed_changes) - set(current_candidate.encoding)
+        if missing:
+            current_candidate = make_candidate(instance, current_candidate.encoding + tuple(missing))
+    prob_to_fix = 0.0
+    prob_step = max(1e-4, random.random() * (1 - 2 * instance.delta) / 10.0)
     i = 1
     min_candidate = copy(current_candidate)
     while current_candidate.objective[0] != 0:
+        if not enforce_fixed_changes and random.random() < prob_to_fix:
+            missing = set(fixed_changes) - set(current_candidate.encoding)
+            if missing:
+                change = missing.pop()
+                current_candidate = make_candidate(instance, current_candidate.encoding + (change,))
+                continue
+
         if timer.out():
             if max(n_range) == 1:
                 return min_candidate
@@ -122,6 +131,7 @@ def greedy_repair(current_candidate: Solution, fixed_changes: Iterable[Modificat
             if current_candidate.objective < min_candidate.objective:
                 min_candidate = copy(current_candidate)
         i += 1
+        prob_to_fix += prob_step
         if i > 1000:
             return min_candidate
     return current_candidate
@@ -335,7 +345,8 @@ def _repair_and_update(
     best = update_best(current, best, full_instance_data, timer)
     if timer.out():
         return current, best
-    current = greedy_repair(current, fixed_changes, full_instance_data.instance, mod_mgr, timer)
+    current = greedy_repair(current, fixed_changes, full_instance_data.instance, mod_mgr, timer, range(3, 10),
+                            random.random() < 0.2)
     best = update_best(current, best, full_instance_data, timer)
     if timer.out():
         return current, best
