@@ -81,9 +81,10 @@ class Timer:
 
     def __init__(self, time_limit: float, time_to_best: float = 0.0):
         self.start = time.monotonic()
-        self.deadline = self.start + time_limit
+        limit = max(0.0, time_limit)
+        self.deadline = self.start + limit
         self._last_log = self.start
-        self.time_to_best = time_to_best
+        self.time_to_best = max(0.0, time_to_best)
 
     def out(self) -> bool:
         return time.monotonic() >= self.deadline
@@ -92,18 +93,21 @@ class Timer:
         return time.monotonic() - self.start
 
     def postpone(self, time_shift: float):
-        self.deadline = self.deadline + time_shift
+        if time_shift > 0:
+            self.deadline += time_shift
 
     def update_time_to_best(self):
-        self.time_to_best = self.elapsed()
+        self.time_to_best = max(0.0, self.elapsed())
 
     def set_time_to_best(self, value: float):
-        self.time_to_best = value
+        self.time_to_best = max(0.0, value)
 
     def get_time_to_best(self) -> float:
-        return self.time_to_best
+        return max(0.0, self.time_to_best)
 
     def should_log(self, period: float) -> bool:
+        if period <= 0:
+            return False
         now = time.monotonic()
         if now - self._last_log >= period:
             self._last_log = now
