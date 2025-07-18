@@ -102,7 +102,7 @@ def greedy_repair(current_candidate: Solution, fixed_changes: Iterable[Modificat
     for change in fixed_changes:
         if change not in current_candidate.encoding:
             tmp.append(change)
-    current_candidate.encoding += tuple(tmp)
+    current_candidate = make_candidate(instance, current_candidate.encoding + tuple(tmp))
     i = 1
     min_candidate = copy(current_candidate)
     while current_candidate.objective[0] != 0:
