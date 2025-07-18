@@ -48,7 +48,7 @@ def cancel_l_add_r(changes: Iterable[Modification], fixed_changes: Iterable[Modi
     if new_route is None:
         for change in fixed_changes:
             if change not in new_changes:
-                new_changes += change
+                new_changes = (*new_changes, change)
         new_route = find_path(graph, user_model, begin, end, new_changes)
         if new_route is None:
             new_changes = fixed_changes
@@ -406,6 +406,7 @@ def ls_destruction(current_candidate: Solution, instance: Instance, modification
         current_candidate = max(neighbors, key=lambda x: x[0].objective)[0]
     return current_candidate
 
+
 def fallback(best_candidate: Solution, fixed_changes: tuple[Modification],
              full_instance_data: FullInstanceData, modification_manager: HeuristicModifications, timer: Timer):
     if best_candidate is None or best_candidate.objective[0] > 0:
@@ -415,6 +416,7 @@ def fallback(best_candidate: Solution, fixed_changes: tuple[Modification],
         backup_candidate = make_candidate(instance, adjacent)
         return update_best(backup_candidate, best_candidate, full_instance_data, timer)
     return best_candidate
+
 
 def LNS(full_instance_data: FullInstanceData, timer: Timer, destroy_operators: list[Callable],
         preprocess_operators: list[Callable],
