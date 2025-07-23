@@ -3,10 +3,10 @@ import random
 import typing
 from collections.abc import Iterable, Mapping, Sequence
 
-from tree_search import modification
 from graph_types import Edge, EdgeAttribute, TypedMultiGraph
-from tree_search.modification import ModificationManger
 from objective import find_path, find_path_fast, route_difference
+from tree_search import modification
+from tree_search.modification import ModificationManger
 from tree_search.tree import MonteCarloNode, Node
 from utility import Solution, UserModel
 
@@ -107,7 +107,7 @@ def try_reduce(graph: TypedMultiGraph, foil_route: Sequence[Edge],
     while i < len(encoding):
         copied = encoding.copy()
         del copied[i]
-        route = find_path_fast(graph, user_model, copied, begin, end)
+        route = find_path_fast(graph, user_model, begin, end, copied)
         if route is None:
             i += 1
             continue
@@ -136,7 +136,7 @@ def add_modification(graph: TypedMultiGraph, foil_route: Sequence[Edge], user_mo
     end = foil_route[-1][1]
     encoding = list(node.encoding)
     encoding.extend(modification)
-    route = find_path_fast(graph, user_model, encoding, begin, end)
+    route = find_path_fast(graph, user_model, begin, end, encoding)
     if route is not None:
         distance = route_difference(foil_route, route, graph)
     else:

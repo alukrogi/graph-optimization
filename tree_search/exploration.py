@@ -19,6 +19,7 @@ class SimpleExploration:
         item for item in items if item.route_distance_violation > 0 and item.feasible)
 
     def has_next(self): return bool(self._queue)
+
     @property
     def pending(self): return len(self._queue)
 
@@ -50,11 +51,15 @@ class GreedyExploration:
         self._queue.extend(GreedyExploration._NodeWrapper(item) for item in items if item.route_distance_violation > 0)
         heapq.heapify(self._queue)
 
-    def has_next(self): return bool(self._queue)
-    @property
-    def pending(self): return len(self._queue)
+    def has_next(self):
+        return bool(self._queue)
 
-    def pop_next(self): return heapq.heappop(self._queue).node
+    @property
+    def pending(self):
+        return len(self._queue)
+
+    def pop_next(self):
+        return heapq.heappop(self._queue).node
 
 
 class LengthExploration:
@@ -85,8 +90,12 @@ class LengthExploration:
         self._queue.extend(LengthExploration._NodeWrapper(item) for item in items if item.route_distance_violation > 0)
         heapq.heapify(self._queue)
 
-    def has_next(self): return bool(self._queue)
-    @property
-    def pending(self): return len(self._queue)
+    def has_next(self):
+        return bool(self._queue)
 
-    def pop_next(self): return heapq.heappop(self._queue).node
+    @property
+    def pending(self):
+        return len(self._queue)
+
+    def pop_next(self):
+        return heapq.heappop(self._queue).node

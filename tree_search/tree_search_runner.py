@@ -4,12 +4,12 @@ from collections.abc import Iterable, Mapping, MutableMapping, Sequence
 from multiprocessing import Pool
 from threading import Condition
 
-import greedy
-from exploration import GreedyExploration, LengthExploration
 from graph_types import Edge, EdgeAttribute, TypedMultiGraph
-from modification import FastModifications, ModificationManger
 from objective import find_path, find_path_and_length_fast, find_path_fast, route_difference
-from tree import MonteCarloNode, Node
+from tree_search import greedy
+from tree_search.exploration import GreedyExploration, LengthExploration
+from tree_search.modification import FastModifications, ModificationManger
+from tree_search.tree import MonteCarloNode, Node
 from utility import Instance, Modification, Solution, UserModel
 
 
@@ -100,7 +100,7 @@ def run_parallel_tree_search(graph: TypedMultiGraph, foil_route: Sequence[Edge],
     exploration = GreedyExploration()
     modification_manager = FastModifications(graph, user_model.minimum_width,
                                              user_model.maximum_height, user_model.path_preference)
-    root_route = find_path_fast(graph, user_model, (), begin, end)
+    root_route = find_path_fast(graph, user_model, begin, end, ())
     assert root_route is not None
     distance = route_difference(foil_route, root_route, graph)
     root_node = Node(None, (), 0, max(distance - delta, 0), distance, root_route)
@@ -133,7 +133,7 @@ def run_parallel_tree_search(graph: TypedMultiGraph, foil_route: Sequence[Edge],
                  seen_nodes,
                  node),
                 callback=lambda result,
-                node=node: _handle_result(
+                                node=node: _handle_result(
                     Instance(
                         graph,
                         tuple(foil_route),
@@ -167,7 +167,8 @@ def _global_init():
 
 def _handle_result(instance: Instance, exploration: GreedyExploration, modification_manager: ModificationManger,
                    best_solution: _Ref[Solution], history: list[tuple[float, float, int, float]], start_time: float,
-                   node: Node, result: tuple[Iterable[Node], Solution | None], seen_nodes: set[frozenset[tuple[Edge, EdgeAttribute]]],
+                   node: Node, result: tuple[Iterable[Node], Solution | None],
+                   seen_nodes: set[frozenset[tuple[Edge, EdgeAttribute]]],
                    queue_length: _Ref[int], condition: Condition):
     children, solution = result
     if solution is not None and solution.objective < best_solution.value.objective:
@@ -220,7 +221,7 @@ def _process_node(graph: TypedMultiGraph, foil_route: Sequence[Edge], user_model
         if change_set in seen_nodes or change_set in global_seen:
             continue
         global_seen.add(change_set)  # type: ignore
-        new_path = find_path_fast(graph, user_model, new_changes, begin, end)
+        new_path = find_path_fast(graph, user_model, begin, end, new_changes)
         if new_path is None:
             continue
         distance = route_difference(foil_route, new_path, graph)
@@ -248,7 +249,8 @@ def run_monte_carlo(instance: Instance, time_limit: float):
                                              user_model.maximum_height, user_model.path_preference)
     root_route = find_path(graph, (), user_model, begin, end)
     assert root_route is not None
-    root_node = MonteCarloNode(None, (), 0, max(route_difference(foil_route, root_route, graph) - delta, 0), root_route)
+    route_error = route_difference(foil_route, root_route, graph)
+    root_node = MonteCarloNode(None, (), 0, max(route_error - delta, 0), route_error, root_route)
     best_solution = Solution((), root_node.objective)
     seen_nodes: dict[frozenset[tuple[Edge, EdgeAttribute]], MonteCarloNode] = {}
     _process(root_node, modification_manager, foil_route, seen_nodes)
@@ -271,7 +273,7 @@ def run_monte_carlo(instance: Instance, time_limit: float):
             _process_infeasible(node, modification)
             continue
         distance = route_difference(foil_route, new_path, graph)
-        new_node = node.make_child(modification, len(encoding), max(distance - delta, 0), new_path)
+        new_node = node.make_child(modification, len(encoding), max(distance - delta, 0), distance, new_path)
         new_node = _process2(instance, new_node, modification_manager, foil_route, seen_nodes)
         if new_node.objective < best_solution.objective:
             best_solution = Solution(new_node.encoding, new_node.objective)
