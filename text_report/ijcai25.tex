@@ -1,0 +1,421 @@
+\documentclass{article}
+\pdfpagewidth=8.5in
+\pdfpageheight=11in
+
+% The file ijcai25.sty is a copy from ijcai22.sty
+% The file ijcai22.sty is NOT the same as previous years'
+\usepackage{ijcai25}
+
+% Use the postscript times font!
+\usepackage{times}
+\usepackage{soul}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage[small]{caption}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{booktabs}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage[switch]{lineno}
+\usepackage{multirow}
+
+% Comment out this line in the camera-ready submission
+%\linenumbers
+
+\urlstyle{same}
+
+% the following package is optional:
+%\usepackage{latexsym}
+
+% See https://www.overleaf.com/learn/latex/theorems_and_proofs
+% for a nice explanation of how to define new theorems, but keep
+% in mind that the amsthm package is already included in this
+% template and that you must *not* alter the styling.
+\newtheorem{example}{Example}
+\newtheorem{theorem}{Theorem}
+
+% Following comment is from ijcai97-submit.tex:
+% The preparation of these files was supported by Schlumberger Palo Alto
+% Research, AT\&T Bell Laboratories, and Morgan Kaufmann Publishers.
+% Shirley Jowell, of Morgan Kaufmann Publishers, and Peter F.
+% Patel-Schneider, of AT\&T Bell Laboratories collaborated on their
+% preparation.
+
+% These instructions can be modified and used in other conferences as long
+% as credit to the authors and supporting agencies is retained, this notice
+% is not changed, and further modification or reuse is not restricted.
+% Neither Shirley Jowell nor Peter F. Patel-Schneider can be listed as
+% contacts for providing assistance without their prior permission.
+
+% To use for other conferences, change references to files and the
+% conference appropriate and use other authors, contacts, publishers, and
+% organizations.
+% Also change the deadline and address for returning papers and the length and
+% page charge instructions.
+% Put where the files are available in the appropriate places.
+
+
+% PDF Info Is REQUIRED.
+
+% Please leave this \pdfinfo block untouched both for the submission and
+% Camera Ready Copy. Do not include Title and Author information in the pdfinfo section
+\pdfinfo{
+/TemplateVersion (IJCAI.2025.0)
+}
+
+\title{A Destroy‑and‑Repair Heuristic for the Counterfactual Routing Problem}
+
+\author{
+  Dmitry Konovalov \and
+  Alexander Yuskov \and
+  Igor Kulachenko\textsuperscript{*} \and
+  Andrey Melnikov \and
+  Igor Vasilyev \and
+  Haohan Huang \and
+  Juan Chen \and
+  Dong Zhang\\
+  \affiliations
+  HGLM Team \\
+  \emails
+  \textsuperscript{*}soge.ink@gmail.com
+}
+
+
+\DeclareMathOperator{\lex}{lex}
+\newcommand{\blfootnote}[1]{
+  \begingroup
+  \renewcommand\thefootnote{}\footnote{#1}
+  \addtocounter{footnote}{-1}
+  \endgroup
+}
+
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Within the Counterfactual Routing Competition of the IJCAI-25 conference, a user traveling from one node to another on the graph is considered. 
+The user has a desired (\textit{foil}) route and several parameters, affecting how users perceive edge lengths and whether edges are available.
+The foil route can deviate from the \textit{fact} shortest route computed taking the user's parameters into account, and the Counterfactual Routing Problem (CRP) is to introduce the smallest number of modifications into the graph edges' attributes so that the fact and foil routes become close enough.
+In this work, we present two heuristic algorithms for the CRP and propose a MIP model to evaluate the algorithms' performance.
+\end{abstract}
+
+\section{Introduction}
+
+The present study is motivated by the need to explain to a wheelchair user why they should choose a specific shortest route, called a \textit{fact route}, instead of the one, hereafter referred to as the \textit{foil route}, that appears to be more favorable at first glance. 
+The idea is to modify the transportation graph so that the foil route becomes optimal.
+Then one could list the modifications in the actual graph that must be there to make the foil route optimal, but since they are absent, the user should prefer the fact one.
+
+The problem of finding the smallest number of modifications so that the shortest route in the modified graph is close to the foil one is further referred to as Counterfactual Routing Problem or CRP for short. 
+CRP can be considered as a bilevel problem, where two players act in a hierarchical organization.
+Firstly, one player, called Leader, decides how the graph must be modified, aiming to ensure that the shortest route computed by the second player, called Follower, after the Leader's decision, satisfies Leader's conditions.
+Such kind of models are known in the literature as interdiction shortest path problems \cite{Israeli2002}, and are relatively well studied now due to their broad security and other applications.
+
+Since the condition that the fact route in the modified graph is close enough to the foil one can be unmet by a heuristic algorithm, the CRP in the competition is formulated as a bi-objective problem, where the infeasibility in terms of this condition is minimized first.
+When the condition is satisfied, the number of modifications must be minimized as well. 
+So, we deal with a bi-objective lexicographical minimization problem. 
+
+To find a quality solution of the CRP in a reasonable time, two heuristic approaches are proposed. 
+The idea of sequential exploration of promising modifications with backtracking is implemented in our Tree Search (TS) framework, one variant of which mimics the popular Monte Carlo Tree Search (MCTS) pipeline~\cite{browne-et-al:survey-mcts} under a deterministic, exploitation‑first policy.
+A multi‑start variant of the Destroy‑and‑Repair (DR) algorithm -- a heuristic popularized in vehicle routing as Large Neighborhood Search (LNS)~\cite{pisinger-ropke:lns} -- with destroy operator (removing graph modifications) and repair operator (introducing new modifications to restore feasibility), is proposed as well.
+A mixed-integer programming (MIP) model obtained by a single-level reformulation of a bilevel one is proposed to compute lower bounds for benchmarking the heuristics. The code for our TS, DR, and MIP implementations is available in the repository~\cite{codebase}.
+
+The remainder of the paper is organized as follows.
+In Section \ref{sec:problem}, we formalize the problem and derive its MIP formulation.
+In Section \ref{sec:algorithms}, the TS and DR heuristics are described in detail, and their computational study is given in Section \ref{sec:experiments}.
+Section \ref{sec:conclusion} concludes the paper.
+
+\section{Problem Description and MIP Formulation}
+\label{sec:problem}
+
+We are given a graph $G = (V,E)$, where $V$ denotes the set of nodes (locations) and $E$ denotes the set of edges (road segments connecting these locations). 
+The length of an edge $e\in E$ would be denoted by $l_e$. 
+
+Each edge has several attributes such as length, curb height, sidewalk width, etc. 
+The fact routes are built by the route planner in consideration with user's parameters aggregated in the user model. 
+These parameters are the following: 
+\begin{itemize}
+    \item Minimum acceptable sidewalk width;
+    \item Maximum acceptable curb height;
+    \item Preferred mode of traveling: on walk paths or bike paths;
+    \item A parameter that indicates the strength of the preference in mode of traveling.
+\end{itemize}
+Given the user model, the route planner computes the fact route that operates with the edges that have the appropriate width and height of the sidewalk.
+Instead of pure edge length values, it uses their modified values depending on the user's preferred mode of travel and necessity to cross the road.
+
+Our decisions regarding the modifications of edge attributes can be represented by a triplet of binary values.
+Despite the fact that the edge attributes sidewalk width and curb height take numeric values, the route planner either takes the edge into account if its attributes fit the user parameters or discards the edge otherwise. 
+In this case, we can either keep the present state of the edge or modify the numeric attribute forcing the planner to switch the edge's status.
+The decision to switch the edge's status would completely enable or disable the edge respectively.
+The choice of mode of traveling is binary also, since we either leave the mode as it is in the original graph or change it from Walk to Bike and vice versa.
+This decision affects the modified edge's length value.
+For all the mentioned modifications, we can keep the value zero to indicate that the attribute was not changed, and one, when the attribute was flipped. 
+
+As a result, the CRP can be formulated as a problem to find the attributes modification vector $a$ delivering $$\lex\min_{a\in \{0,1\}^{3n}} \left(\Delta(r(a), r^f), ||a||_1\right),$$ where\\
+$n = |E|$ is the number of edges;\\
+$r(a)$ is the fact route in the graph modified according to $a$;\\
+$r^f$ is user's foil route;\\
+$\Delta(r,r')$ is computed by formula $\max(0, \mathtt{RouteDist}(r, r') - \delta)$, where $\delta$ is a predefined threshold, and the distance between two routes is computed as
+$$
+\mathtt{RouteDist}(r,r') = 1 - 2\frac{\sum_{e\in r\cap r'} l_e}{\sum_{e\in r}l_e + \sum_{e\in r'} l_e}
+$$
+
+To write the CRP in terms of mixed-integer programming, we need to consider the following entities.
+
+\paragraph{Sets.} Indices $i$ and $j$ take their values from the index set $V$ of graph vertices.
+We call a combination of edge attributes an \textit{edge type}. 
+The complete set of edge types would be denoted by $K$, and $k$ would denote an index from this set.
+\paragraph{Parameters.} $m_{ijk}$ equals to the number of modifications needed to change the type of the edge $(i, j)$ from its initial one into the type $k$;\\
+$l_{ij}$ is the length of the edge $(i, j)$;\\
+$\bar{l}_{ij}$ equals to $l_{ij}$ if $(i, j)$ is in the foil route and zero otherwise;\\
+$w_{ijk}$ is the modified length value of the edge $(i, j)$ if it is transformed into the type $k$;\\
+$\delta$ is a maximal admissible deviation from the foil route in terms of route distance.
+\paragraph{Variables.}
+$x_{ijk}$ equals one if the edge $(i, j)$ has a type $k$, and zero otherwise;\\
+$t_{ijk}$ equals one if the fact route traverses the edge $(i, j)$ of type $k$, and zero otherwise.
+
+Having the relations
+\begin{equation}
+\label{eq:1}
+	\mathtt{GraphDist} = D^g = \sum_{i, j, k} m_{ijk} x_{ijk};
+\end{equation}
+\begin{equation}
+\label{eq:2}
+	\mathtt{FactLen} = L^* = \sum_{i, j, k} l_{ij}t^*_{ijk};
+\end{equation}
+\begin{equation}
+\label{eq:3}
+    \mathtt{CommonLen} = C = \sum_{i, j, k} \bar{l}_{ij} t^*_{ijk};
+\end{equation}
+\begin{equation}
+\label{eq:4}
+	\mathtt{FoilLen} = \bar{L} = \sum_{i, j} \bar{l}_{ij};
+\end{equation}
+\begin{equation}
+\label{eq:5}
+	\mathtt{RouteDist} = D^p = 1 - 2\frac{C}{L^* + \bar{L}} \leq \delta;
+\end{equation}
+\begin{equation}
+\label{eq:6}
+	\sum_k x_{ijk} = 1,\quad i, j\in V;
+	x_{ijk}\in \{0, 1\}.
+\end{equation}
+The goal is to lexicographically minimize the vector-function $(\max(D^p - \delta, 0), D^g)$ provided that $(t^*_{ijk})$ is the optimal solution of the shortest path problem $\mathcal{SPP}(x)$ parametrized by $(x_{ijk})$.
+
+\begin{gather*}
+	\min_{(t_{ijk})} \sum_{i, j, k} w_{ijk} t_{ijk}\\
+	\tag{$\alpha_j$}
+	\sum_{i, k} t_{ijk} - \sum_{i, k} t_{jik} = \begin{cases}
+		-1, \mbox{ if $j$ is the origin}\\
+		1, \mbox{ if $j$ is the destination}\\
+		0, \mbox{ otherwise}
+	\end{cases};\\
+    \tag{$\beta_{ijk}$}
+    0 \leq t_{ijk} \leq x_{ijk}.
+\end{gather*}
+Consider the dual of the $\mathcal{SPP}(x)$
+\begin{gather}
+    \max_{(\alpha_j), (\beta_{ijk})} -\alpha_o + \alpha_d - \sum_{i, j, k} x_{ijk}\beta_{ijk}\\
+    \alpha_j - \alpha_i - \beta_{ijk}\leq w_{ijk}\\
+    \beta_{ijk} \geq 0
+\end{gather}
+The optimality condition for variables $(t_{ijk})$ is equivalent to the condition of equity for primal and dual objectives.
+This condition is non-linear and must be linearized using standard techniques before passing to the MIP-solver:
+\begin{equation*}
+    \sum_{i,j,k} w_{ijk}t_{ijk} = - \alpha_o + \alpha_d - \sum_{ijk}x_{ijk}\beta_{ijk}
+\end{equation*}
+The overall single-level bi-objective reformulation of the problem is the following one joined with the relations \eqref{eq:1}--\eqref{eq:5}:
+\begin{gather}
+    \label{mip:objective} \min_{(x_{ijk}), (t_{ijk}), (\alpha_j), (\beta_{ijk}), \Delta} (\Delta, D^g)\\
+    \Delta \geq (L^* + \bar{L})(1 - \delta) - 2C\\
+    \sum_k x_{ijk} = 1\\
+    \sum_{ijk}w_{ijk}t_{ijk} = - \alpha_o + \alpha_d - \sum_{ijk}x_{ijk}\beta_{ijk}\\
+    \sum_{i, k} t_{ijk} - \sum_{i, k} t_{jik} = \begin{cases}
+		-1, \mbox{ if $j$ is the origin}\\
+		1, \mbox{ if $j$ is the destination}\\
+		0, \mbox{ otherwise}
+	\end{cases};\\
+    0 \leq t_{ijk} \leq x_{ijk}\\
+    \alpha_j - \alpha_i - \beta_{ijk} \leq w_{ijk}\\
+    \Delta, \beta_{ijk} \geq 0\\
+    x_{ijk}\in \{0, 1\}.
+\end{gather}
+
+\section{Algorithms}
+\label{sec:algorithms}
+
+\subsection{Selection of Relevant Modifications}
+To reach good performance of the algorithms, one could concentrate efforts on considering only those attributes' modifications, which are relevant to the user's situation.
+The selection of relevant modifications follows the logic of the problem: we limit the choice of edges only to those which are different for fact and foil routes (heuristic policy).
+
+For edges, belonging to the foil route but not to the fact one, we are interested in ``improving'' modifications: making them available by increasing their width or lowering the curb (width increases are attempted before curb‑lowering).
+The attractiveness of these edges can be improved also by selecting a proper path type, but this modification has a lower priority since, if the edge is unavailable due to small width or high curb, then the path type is not relevant.
+
+Edges, which appear in the fact route but do not present in the foil one, should be modified in the opposite way: we consider decreasing of their width and heightening their curbs, and, with lower priority, changing of their path type.
+
+
+\subsection{Tree Search}
+\label{sec:tree-search}
+
+We explore edge‐attribute modifications -- \emph{encodings} -- in a best‐first manner using a  priority queue $\mathcal Q$.  Each encoding~$a$ is ranked by the lexicographic pair
+\[
+  \bigl(\Delta(a),\,\|a\|_1\bigr),
+\]
+where $\Delta(a)=\Delta(r(a),r^f)$ is the route‐distance violation~(Sec.~\ref{sec:problem}) and $\|a\|_1$ the number of modifications.
+
+\subsubsection{Move Generation}
+From any encoding $a$, we form children $a'=a\cup\{m\}$ for each “relevant” modification $m$, chosen by either:
+\begin{itemize}
+  \item \emph{Heuristic policy:} restricts to edges in the current or foil route,
+  \item \emph{Complete policy:} considers all graph edges.
+\end{itemize}
+Each child is evaluated immediately; upon reaching $\Delta(a')=0$, we apply a fast greedy post‑processing to prune redundant changes.
+
+\subsubsection{Deterministic Best–First}
+We repeatedly pop the encoding with smallest \((\Delta,\|a\|_1)\) from \(\mathcal Q\) and expand it under the chosen policy.  During expansion, if \(\Delta>0\), we enqueue a separate child obtained by greedily fixing the first mismatched edge (forbidding the fact and enabling the foil) until \(\Delta=0\).  Any encoding with \(\Delta=0\) is post‑processed greedily to trim redundant changes.  When the queue is exhausted, the best zero‑violation encoding found is \emph{guaranteed optimal} for the lexicographic objective within that policy’s search space.
+
+\subsubsection{MCTS–Inspired Search}
+Alternatively, we view each encoding as an MCTS node, tracking visits $v(a)$ and total reward $R(a)$
+We select the child with largest $R(a)/v(a)$ (pure exploitation under tight budgets), though one can optionally apply standard UCT exploration.  During expansion we perform a single rollout. If the computed violation $\Delta(a')>0$, we apply the greedy fixing step described above. Finally, we backpropagate the scalar reward
+\[
+  R \;=\;\frac{1}{1000\,\Delta(a') + \|a'\|_1}.
+\]
+
+
+
+\subsection{Destroy-and-Repair Algorithm}
+Destroy‐and‐repair alternates removing and re‐adding modifications to improve the incumbent solution and escape local minima. The key components of the search include:
+
+\begin{itemize}
+   \item \textbf{Destroy operators}: Methods that selectively remove elements or components from the current solution.
+   \item \textbf{Repair operators}: Procedures that reconstruct or modify solutions to restore feasibility and potentially improve quality.
+ \end{itemize}
+
+\subsubsection{Destroy Operators}
+We tested various destroy operators. The best-performing ones will be described in this section.
+
+The \textit{random destroy operator} just randomly removes $10$--$30\%$ of the current solution’s modifications. 
+
+The \textit{local-search destroy operator} at each step generates neighbors by removing one random change from the current solution and moves to the neighbor with minimal route error until it removes $10$--$30\%$ of the current solution’s modifications. 
+
+The \textit{population-based swap} creates a population to hopefully find an important area on the map where we need to add hard constraints or improve the path type. Each individual in the population is created by removing one random modification from the current solution. Let $\mathcal{P}$ be the set of resulting routes and $r^f$ the foil route. We then: 1) promote edges in 
+  \(
+    r^f \setminus \bigcup_{r \in \mathcal{P}} r
+  \)
+  by adjusting their path type, and 2) penalize edges in 
+  \(
+    \bigcap_{r \in \mathcal{P}} \left(r \setminus r^f\right)
+  \)
+  by imposing hard constraints. The population must remain small, or these intersections may become empty.
+
+For more accurate destruction of the current solution, we introduce two versions of \textit{clean-up operators}. The first version iteratively tries to remove each modification from the current solution and then checks if the obtained solution is feasible, if so it calls the considered change \textit{useless}. After finishing the loop, it removes all useless changes from the current solution. The second version is very similar to the first one. The difference is that it does not memorize useless changes but removes them on the spot.
+
+\subsubsection{Repair Operator}
+
+At the start, we flip a 20\% chance -- if triggered, we immediately relax all hard‑constraint edges on the foil route in one batch; otherwise we skip straight to the iterative loop.  In that loop, we perform a local search: at each iteration we use the modification manager to add one new change (which may include further foil‑route relaxations) that most reduce the route‑distance violation.  We repeat until $\Delta=0$.
+
+\subsubsection{Algorithm}
+
+We maintain multiple search workers that periodically share best solutions to intensify exploration in promising regions.
+
+\begin{algorithm}[H]
+  \caption{Parallel Multi‐start DR Heuristic}
+  \label{alg:msdr}
+  \begin{algorithmic}[1]
+    \Function{MultiStartDR}{$G, r^f, a_0$}
+      \State \textbf{Parameters:} $\mathcal C,\;\mathcal D,\;\textit{intersectFlag}$
+      \State $a \gets \Call{Repair}{a_0}$
+      \State $ \mathit{localBest} \gets a$
+      \State $ \mathit{globalBest} \gets a$  \Comment{initialized once}
+      \While{\Call{timeRemaining}{}}
+        \If{\Call{isShareTime}{}}
+          \State $\mathit{globalBest} \gets \Call{SyncBest}{\mathit{localBest}}$
+          \If{$\mathit{intersectFlag}$}
+            \State $a \gets \Call{Repair}{\,a \land \mathit{globalBest}\,}$
+           \Else
+            \State $a \gets \Call{Repair}{\,a \land \mathit{localBest}\,}$
+          \EndIf
+        \EndIf
+
+        \State $c \gets \Call{randomChoice}{\mathcal C}$   \Comment{pick a clean-up $op$}
+        \State $d \gets \Call{randomChoice}{\mathcal D}$   \Comment{pick a destroy $op$}
+        \ForAll{$op\;\in\;[\,c,\;\Call{Repair}{\cdot},\;d,\;\Call{Repair}{\cdot}\,]$}
+          \State $a \gets op(a)$
+          \State $\mathit{localBest} \gets \Call{SelectBetter}{a,\,\mathit{localBest}}$
+        \EndFor
+      \EndWhile
+      \State $\mathit{globalBest} \gets \Call{SyncBest}{\mathit{localBest}}$
+      \State \Return $\mathit{globalBest}$
+    \EndFunction
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{description}
+  \item[\Call{timeRemaining}{}] true until the overall time limit  
+  \item[\Call{isShareTime}{}] true when it is the time to exchange bests  
+  \item[\Call{SyncBest}{$x$}] share $x$; update $\mathit{globalBest}$
+  \item[$a\land b$] bit‐wise AND of two solutions  
+  \item[\Call{SelectBetter}{$a,b$}] pick the one with smaller $(\Delta,\|\,\cdot\,\|_1)$
+\end{description}
+
+In our implementation, we split the workers evenly: half run with \texttt{intersectFlag = true} and half with \texttt{intersectFlag = false}.
+
+
+
+\subsection{Computational Results}
+\label{sec:experiments}
+
+Table~\ref{tab:aggregated_results} summarizes our aggregated performance over eight sets of benchmark instances.  All experiments were run on a desktop with an Intel Core i7‑13700 CPU, 32 GB of RAM, using 23 threads for DR runs.
+We evaluated on:
+\begin{itemize}
+  \item \textbf{demo} (3 provided demo instances)
+  \item \textbf{osdpm} (25 Amsterdam Osdorp‑Midden instances)
+  \item \textbf{bbox1–bbox3\_0.15\_bike}\footnote{Six sets generated via \url{https://github.com/Amsterdam-AI-Team/Accessible_Route_Planning}: 10 instances each, except 9 for bbox1.}
+\end{itemize}
+
+The second column of Table~\ref{tab:aggregated_results} reports the percentage of instances for which the best‑known solution (BKS) was proven optimal by solving the linearized MIP model from Section~\ref{sec:problem} to optimality, with the deviation constraint $\Delta\le 0$ enforced. The last two columns give the average gap to the BKS (found by DR) for the best-configuration tree search scheme (TS) and multi‑start DR, respectively. DR was run ten times per instance, while the deterministic TS was run once. Gaps are averaged over all instances in the corresponding set. The time budget for the algorithms was set to 5 minutes. Across all sets, the mean gap for DR is 0.5\% versus 38\% for TS. Simpler baseline heuristics examined separately were less effective.
+
+
+\begin{table}[ht]
+  \centering
+  \begin{tabular}{l c c c}
+    \toprule
+    \multirow{2}{*}{\shortstack{Instance\\[2pt] set}}
+      & \multirow{2}{*}{\shortstack{OPT\\[2pt] proven}}
+      & \multicolumn{2}{c}{Average gap to BKS} \\
+    \cmidrule(lr){3-4}
+      & 
+      & TS & DR \\
+    \midrule
+    demo              & 100\% &   0\% &   0\% \\
+    osdpm             &  92\% &   2\% &   0\% \\
+    bbox1             &  67\% &  6\% &   0\% \\
+    bbox1‑p           &  40\% &  8\% &   0\% \\
+    bbox2‑short       &  90\% &   0\% &   0\% \\
+    bbox2‑long        &  20\% &  48\% &   0\% \\
+    bbox3             &   0\% &  111\% &   2\% \\
+    bbox3\_0.15\_bike    &   0\% & 155\% &   3\% \\
+    \midrule
+    TOTAL             &  54\% &  38\% &  0.5\% \\
+    \bottomrule
+  \end{tabular}
+  \caption{Aggregated results}
+  \label{tab:aggregated_results}
+\end{table}
+
+\noindent\textit{Note:} Detailed results are provided in~\cite{codebase}.
+
+\section{Conclusion}
+\label{sec:conclusion}
+We addressed the counterfactual routing problem by formally defining it, deriving a single‑level reformulation, and proposing TS and multi‑start DR heuristics. Computational experiments show that DR reliably finds high-quality modification sets with minimal deviation. Our method produces concise graph modifications that can serve as counterfactual explanations for personalized route choices. This has the potential to support accessible navigation for users with accessibility needs and may help surface infrastructure limitations for urban planners. Ablation studies of individual DR components and sharing strategies remain important future work.
+
+
+%% The file named.bst is a bibliography style file for BibTeX 0.99c
+\bibliographystyle{named}
+\bibliography{ijcai25}
+\blfootnote{\textit{AI‑assistance disclosure -- The draft was proof‑read with a generative‑AI tool to refine wording, identify technical inaccuracies, and improve concision. All suggestions were manually reviewed; no content, data, or citations were generated by the model.}}
+\end{document}
