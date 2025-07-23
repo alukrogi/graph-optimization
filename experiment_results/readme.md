@@ -1,8 +1,7 @@
 # Experiment Results
 
-This directory contains the complete results of our computational study on the IJCAI‑25 Counterfactual Routing Problem (
-CRP). We present a detailed comparison of two heuristic algorithms — **Tree Search (TS)** and **Destroy‑and‑Repair (DR)
-**
+This directory contains the complete results of our computational study on the IJCAI‑25 Counterfactual Routing Problem (CRP).
+We present a detailed comparison of two heuristic algorithms — **Tree Search (TS)** and **Destroy‑and‑Repair (DR)**
 — against the best‑known solutions (BKS) and optimality bounds obtained via our MIP model.
 
 ---
@@ -14,7 +13,7 @@ CRP). We present a detailed comparison of two heuristic algorithms — **Tree Se
 
     * **Instance**: unique identifier for each test case
     * **BKS**: best‑known solution value (number of modifications, penalties $\Delta=0$)
-    * **OPT Proven**: whether our MIP model proved that the BKS is optimal
+    * **OPT Proven**: whether we proved that the BKS is optimal using our MIP model
     * **TreeSearch**: solution value returned by the deterministic Tree Search heuristic
     * **DR\_Min**: best (minimum) solution value over 10 independent runs of multi-start Destroy‑and‑Repair heuristic
     * **DR\_Avg**: average solution value over those 10 runs
