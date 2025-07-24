@@ -41,11 +41,7 @@ user path preference to “bike.”
 
 ## Aggregated Performance Overview
 
-The table below summarizes each instance set’s overall performance. Gaps for TS and DR are computed as
-
-$$
-\text{Gap}(\%) = \frac{\text{HeuristicValue} - \text{BKS}}{\text{BKS}} \times 100\%  
-$$
+The table below summarizes each instance set’s overall performance. Gaps for TS and DR are computed as *Gap(%)* = (HeuristicValue − BKS) / BKS × 100%
 
 | Instance Set      | % OPT Proven | Avg. Gap TS | Avg. Gap DR |
 |:------------------|:------------:|:-----------:|:-----------:|
