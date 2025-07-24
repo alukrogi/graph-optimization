@@ -96,9 +96,9 @@ class ModificationGenerator:
         can_change_type = path_type == 'walk' or path_type == 'bike'
         initially_feasible = width >= self._width and (height is None or height <= self._height)
         initially_preferred = path_type == self._path_type
-        assert initially_feasible
-        assert not any(modified_edge == edge_name for modified_edge,
-                       _ in current_solution)
+        if (not initially_feasible) or  any(modified_edge == edge_name for modified_edge,
+                       _ in current_solution):
+            return ()
         if self._can_narrow:
             return ('obstacle_free_width_float',)
         if self._can_raise and height is not None:

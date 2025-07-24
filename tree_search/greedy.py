@@ -76,6 +76,8 @@ def fix_first(modification_manager: ModificationManger, graph: TypedMultiGraph, 
                 break
         assert edge is not None
         modifications = modification_manager.forbid(node.encoding, edge)
+        if len(modificiations) == 0:
+            break
         modifications = tuple(modification.put_edge(edge, modifications))
         node = add_modification(graph, foil_route, user_model, delta, node, modifications)
     return node
