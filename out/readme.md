@@ -30,4 +30,4 @@ This folder contains results produced by `run_and_validate_osdpm.py`.
 | osdpm_4_4   | 1                       | 1                       |
 | osdpm_4_5   | 1                       | 1                       |
 
-_Lower bounds obtained via long MILP runs (see pdf text report, to be uploaded later). Optimality proven for 23 of 25 instances._  
+_Lower bounds obtained via long MILP runs (see [pdf text report](https://github.com/alukrogi/graph-optimization/blob/main/text_report/ijcai25.pdf)). Optimality proven for 23 of 25 instances._  
