@@ -66,7 +66,7 @@
 /TemplateVersion (IJCAI.2025.0)
 }
 
-\title{A Destroy‑and‑Repair Heuristic for the Counterfactual Routing Problem}
+\title{A Destroy-and-Repair Heuristic for the Counterfactual Routing Problem}
 
 \author{
   Dmitry Konovalov \and
@@ -80,7 +80,7 @@
   \affiliations
   HGLM Team \\
   \emails
-  \textsuperscript{*}soge.ink@gmail.com
+  \textsuperscript{*}{soge.ink@gmail.com}
 }
 
 
@@ -113,7 +113,7 @@ Then one could list the modifications in the actual graph that must be there to 
 The problem of finding the smallest number of modifications so that the shortest route in the modified graph is close to the foil one is further referred to as Counterfactual Routing Problem or CRP for short. 
 CRP can be considered as a bilevel problem, where two players act in a hierarchical organization.
 Firstly, one player, called Leader, decides how the graph must be modified, aiming to ensure that the shortest route computed by the second player, called Follower, after the Leader's decision, satisfies Leader's conditions.
-Such kind of models are known in the literature as interdiction shortest path problems \cite{Israeli2002}, and are relatively well studied now due to their broad security and other applications.
+Such kind of models are known in the literature as interdiction shortest path problems~\cite{Israeli2002}, and are relatively well studied now due to their broad security and other applications.
 
 Since the condition that the fact route in the modified graph is close enough to the foil one can be unmet by a heuristic algorithm, the CRP in the competition is formulated as a bi-objective problem, where the infeasibility in terms of this condition is minimized first.
 When the condition is satisfied, the number of modifications must be minimized as well. 
@@ -121,7 +121,7 @@ So, we deal with a bi-objective lexicographical minimization problem.
 
 To find a quality solution of the CRP in a reasonable time, two heuristic approaches are proposed. 
 The idea of sequential exploration of promising modifications with backtracking is embodied in a Tree Search (TS) framework, inspired by Monte Carlo Tree Search in a deterministic form~\cite{browne-et-al:survey-mcts}.
-We also develop a multi‑start variant of the Destroy‑and‑Repair (DR) algorithm -- a heuristic popularized in vehicle routing as Large Neighborhood Search (LNS)~\cite{pisinger-ropke:lns} -- with destroy operator (removing graph modifications) and repair operator (introducing new modifications to restore feasibility).
+We also develop a parallel variant of the Destroy-and-Repair (DR) algorithm -- a heuristic popularized in vehicle routing as Large Neighborhood Search (LNS)~\cite{pisinger-ropke:lns} -- with destroy operator (removing graph modifications) and repair operator (introducing new modifications to restore feasibility).
 A mixed-integer programming (MIP) model obtained by a single-level reformulation of a bilevel one is proposed to compute lower bounds for benchmarking the heuristics. The code for our TS, DR, and MIP implementations is available in the repository~\cite{codebase}.
 
 The remainder of the paper is organized as follows.
@@ -137,13 +137,8 @@ The length of an edge $e\in E$ is denoted by $l_e$.
 
 Each edge has several attributes such as length, curb height, sidewalk width, etc. 
 The fact routes are built by the route planner based on user's parameters aggregated in the user model. 
-These parameters are the following: 
-\begin{itemize}
-    \item Minimum acceptable sidewalk width;
-    \item Maximum acceptable curb height;
-    \item Preferred mode of traveling: on walk paths or bike paths;
-    \item A parameter that indicates the strength of the preference in mode of traveling.
-\end{itemize}
+These parameters are minimum acceptable sidewalk width, maximum acceptable curb height, preferred mode of traveling (Walk or Bike), and a parameter that indicates the strength of the preference in mode of traveling.
+
 Given the user model, the route planner computes the fact route that operates with the edges that have the appropriate width and height of the sidewalk.
 Instead of pure edge length values, it uses their modified values depending on the user's preferred mode of travel and necessity to cross roads.
 
@@ -256,14 +251,14 @@ The selection of relevant modifications follows the logic of the problem: we lim
 For edges, belonging to the foil route but not to the fact one, we are interested in ``improving'' modifications: making them available by increasing their width or lowering the curb (width increases are attempted before curb‑lowering).
 The attractiveness of these edges can be improved also by selecting a proper path type, but this modification has a lower priority since, if the edge is unavailable due to small width or high curb, then the path type is not relevant.
 
-Edges, which appear in the fact route but do not present in the foil one, should be modified in the opposite way: we consider decreasing of their width and heightening their curbs, and, with lower priority, changing of their path type.
+Edges, which appear in the fact route but do not present in the foil one, should be modified in the opposite way: we consider decreasing their width and heightening their curbs, and, with lower priority, changing of their path type.
 
 
-\subsection{Tree Search}
+\subsection{Tree Search Algorithm (TS)}
 \label{sec:tree-search}
 
 We explore binary encodings of edge-attribute modifications in a best‐first manner using a priority queue $\mathcal Q$.  
-The encodings in the queue are ranked in ascending lexicographic order of pairs $\bigl(\Delta(a),\,\|a\|_1\bigr)$, where ~$a$ is the encoding, $\Delta(a)=\max(\mathtt{RouteDist}(r(a),r^f) - \delta, 0)$ is the route distance violation~(Sec.~\ref{sec:problem}) and $\|a\|_1$ the number of modifications.
+The encodings in the queue are ranked in ascending lexicographic order of pairs $\bigl(\Delta(a),\,\|a\|_1\bigr)$, where ~$a$ is the encoding, $\Delta(a)=\max(\mathtt{RouteDist}(r(a),r^f) - \delta, 0)$ is the route distance violation~(Section~\ref{sec:problem}) and $\|a\|_1$ the number of modifications.
 
 \subsubsection{Move Generation}
 For an encoding $a$ considered, we derive children of the form $a + e_m$, where $m$ is a modification chosen by one of the branching rules described below and $e_m$ is a unit vector corresponding to this modification.
@@ -282,18 +277,18 @@ For any encoding with $\Delta=0$, a greedy post-processing procedure is run that
 Notice that if we find an encoding $a$ such that $\Delta(a) = 0$, then we do not need to explore the tree at depth greater than or equal to $||a||_1$ further.
 This allows us to claim that the Tree Search algorithm utilizing the complete branching rule finds an optimal solution of the CRP.
 
-\subsection{Destroy-and-Repair Algorithm}
+\subsection{Parallel Destroy-and-Repair Algorithm (DR)}
 The heuristic described here operates with \textit{solutions} represented by lists of modifications.  
 It alternates operations called ``destroy'', where some modifications are removed from the current solution, often making it infeasible in terms of route distance violation, and ``repair'', where new modifications are introduced instead of the ones removed.
 This strategy allows to escape local minima, allowing one to explore the search space efficiently. 
 
-\subsubsection{Destroy Operators}
+\subsubsection{Destroy and Clean-Up Operators}
 We tested various destroy operators. 
 The best-performing ones will be described in this section.
 
 The \textit{random destroy operator} randomly removes $10$--$30\%$ of modifications from the current solution. 
 
-The \textit{local search destroy operator} at each step generates 3 to 10 neighbor solutions by randomly removing a single modification from the current one. 
+The \textit{local search destroy operator} at each step generates between 3 and 10 neighbor solutions by randomly removing a single modification from the current one. 
 The neighbor with a minimal route distance becomes the current solution on the next step. 
 The procedure repeats until it removes $10$--$30\%$ of the modifications. 
 
@@ -301,18 +296,18 @@ The \textit{population-based swap} aims to find an important subset of edges whe
 It operates with several solutions simultaneously. 
 Each solution in the population is created by removing one random modification from the current solution. 
 Let $\mathcal{P}$ be the set of resulting routes and $r^f$ the foil route. 
-We then: 1) promote edges in 
+We then: 1) promote edges in
 $
     r^f \setminus \bigcup_{r \in \mathcal{P}} r
 $
-by adjusting their path type, and 2) forbid edges in 
+by adjusting their path type and 2) forbid edges in 
 $
     \bigcap_{r \in \mathcal{P}} \left(r \setminus r^f\right)
 $
-by modifying edge attributes in a way that makes it unavailable for the user. 
-The population must remain small, or these intersections may become empty, and thus we use $|\mathcal{P}| = 3$.
+by modifying edge attributes in a way that makes it unavailable to the user. 
+The population must remain small to avoid a situation when the intersections become empty, and thus we use $|\mathcal{P}| = 3$.
 
-To remove redundant modifications from the current solution, we introduce two versions of \textit{clean-up operators}. 
+To remove redundant modifications from the current solution, we utilize two versions of \textit{clean-up operators}. 
 The first version iteratively tries to remove each modification from the current solution and then checks if the obtained solution is feasible, if so it calls the considered modification \textit{useless}. 
 After finishing the loop, it removes all useless modifications from the current solution. 
 The second version is very similar to the first one. 
@@ -320,24 +315,30 @@ The difference is that it does not memorize useless modifications but removes th
 
 \subsubsection{\textsc{Repair} Operator}
 
-At the start, we flip a 20\% chance -- if triggered, we immediately make all edges on the foil route available; otherwise we skip straight to the iterative loop.  In that loop, we perform a local search: at each iteration, we add one new modification (which may include further foil‑route improvements) that most reduces the route‑distance violation.  We repeat until $\Delta=0$.
+The repair procedure is represented by a repeated loop, which is run immediately or after a preliminary step. 
+The preliminary step is executed with a probability of $\frac{1}{5}$ and consists in making all the edges from the foil route available.
+In the loop, we perform a local search. 
+At each iteration, we consider between 3 and 10 possible modifications and choose the one that reduces the route distance violation the most.
+The loop is repeated until $\Delta=0$.
 
-\subsubsection{Multi-Start DR Workflow}
+\subsubsection{Worker's Computational Scheme}
 
-We maintain multiple search workers that periodically share best solutions to intensify exploration in promising regions. At each synchronization point, a worker intersects its current solution with either its personal best or the global best, and then applies the \textsc{Repair} operator to re‑expand the search around that overlapping region. To balance intensification and diversification, we evenly split the workers: half run with \textit{intersectFlag = true} (intersecting with the global best) and half with \textit{intersectFlag = false} (intersecting with their personal best).
+We maintain multiple search workers that periodically share best solutions to intensify exploration in promising regions. 
+At each synchronization point, a worker intersects its current solution with either its personal best or the global best, and then applies the \textsc{Repair} operator to re‑expand the search around that overlapping region. 
+To balance intensification and diversification, we evenly split the workers: half run with \textit{intersectFlag = true} (intersecting with the global best) and half with \textit{intersectFlag = false} (intersecting with their personal best).
 
 
 \begin{algorithm}[H]
-  \caption{Parallel Multi‐start DR Heuristic}
+  \caption{Worker's computational scheme within the DR}
   \label{alg:msdr}
   \begin{algorithmic}[1]
-    \Function{MultiStartDR}{$G, r^f, s_0$}
+    \Function{DRworker}{$G, r^f, s_0$}
       \State \textbf{Parameters:} $\mathcal C,\;\mathcal D,\;\textit{intersectFlag}$
       \State $s \gets \Call{Repair}{s_0}$ \Comment{initialize current solution}
       \State $ s^* \gets s$ \Comment{personal best}
       \While{time limit not reached}
         \If{\Call{isSyncTime}{}}
-          \State $s_{\rm glob}^* \gets \Call{SyncBest}{s^*}$
+          \State $s_{\rm glob}^* \gets \Call{BestOf}{s_{\rm glob}^*, s^*}$
           \If{$\mathit{intersectFlag}$}
             \State $s \gets \Call{Repair}{\,s \cap s_{\rm glob}^*\,}$
            \Else
@@ -349,18 +350,20 @@ We maintain multiple search workers that periodically share best solutions to in
         \State $d \gets \Call{randomChoice}{\mathcal D}$   \Comment{pick a destroy $op$}
         \ForAll{$op\;\in\;[\,c,\;\Call{Repair}{\cdot},\;d,\;\Call{Repair}{\cdot}\,]$}
           \State $s \gets op(s)$
-          \State $s^* \gets \displaystyle
-            \arg\min_{x \in \{s,\,s^*\}}
-              \bigl(\Delta(x),\,\|x\|_1\bigr)$
+          \State $s^* \gets \Call{BestOf}{s, s^*}$
         \EndFor
       \EndWhile
-      \State $s_{\rm glob}^* \gets \Call{SyncBest}{s^*}$
-      \State \Return $s_{\rm glob}^*$
+      \State \Return $s^*$
     \EndFunction
   \end{algorithmic}
 \end{algorithm}
 
-The operators are partitioned into two families: $\mathcal{C}$, which contains the two clean‑up operators, and $\mathcal{D}$, which comprises the three other destroy operators. Whenever the predicate \textsc{IsSyncTime}() is evaluated to~\emph{true}, the routine \textsc{SyncBest}$(x)$ is called to broadcast $s^*$, the best-found solution of the worker, and update the shared global best $s_{\rm glob}^*$. The notation $s \cap s'$ denotes the set‑theoretic intersection of the modification lists. The routine \textsc{RandomChoice} returns an element chosen uniformly at random from its input set.
+The operators are partitioned into two families: $\mathcal{C}$, which contains the two clean‑up operators, and $\mathcal{D}$, which comprises the three destroy operators. 
+The event \textsc{IsSyncTime} happens every $\frac{T}{3}$ seconds, where $T$ is the time limit value. 
+In the case of \textsc{IsSyncTime}, we update the shared global best~$s_{\rm glob}^*$. 
+The routine \textsc{BestOf} compares two solutions and returns one with a lexicographically smaller value of the objective functions. 
+The notation $s \cap s'$ denotes the set‑theoretic intersection of the modification lists. 
+The routine \textsc{RandomChoice} returns an element chosen uniformly at random from its input set.
 
 
 
@@ -369,18 +372,15 @@ The operators are partitioned into two families: $\mathcal{C}$, which contains t
 \label{sec:experiments}
 
 Table~\ref{tab:aggregated_results} summarizes our aggregated performance over eight sets of benchmark instances.  All experiments were run on a desktop with an Intel Core i7‑13700 CPU, 32 GB of RAM, using 23 threads for DR runs.
-We evaluated on:
-\begin{itemize}
-  \item \textbf{demo} (3 provided demo instances)
-  \item \textbf{osdpm} (25 Amsterdam Osdorp‑Midden instances)
-  \item \textbf{bbox1–bbox3\_0.15\_bike}\footnote{Six sets generated via \url{https://github.com/Amsterdam-AI-Team/Accessible_Route_Planning}: 10 instances each, except 9 for bbox1.}
-\end{itemize}
+We evaluated the algorithms on 8 instance sets. The \textbf{demo} and \textbf{osdpm} sets contain, respectively, 3 and 25 instances provided by the competition organizers. Additionally, we generated six new instance sets covering three different-sized bounding-box (bbox) areas within Amsterdam.\footnote{For the instance generation we used \url{https://github.com/Amsterdam-AI-Team/Accessible_Route_Planning}} For all bbox sets except \textbf{bbox1}, the foil routes correspond to the shortest feasible paths computed in a perturbed graph. We applied the same user model as in the demo instances except those from \textbf{bbox3\_0.15\_bike}, where $\delta$ is set to 0.15, and the user's path preference is set to Bike.
 
-The second column of Table~\ref{tab:aggregated_results} reports the percentage of instances for which the best‑known solution (BKS) was proven optimal by solving the linearized MIP model from Section~\ref{sec:problem} to optimality, with the deviation constraint $\Delta\le 0$ enforced. The last two columns give the average gap to the BKS (found by DR) for the 1‑thread best‑first tree search with heuristic branching rule (TS) and multi‑start DR, respectively. DR was run ten times per instance, whereas TS was run once, as it is deterministic. Gaps are averaged over all instances in the corresponding set. The time budget for the algorithms was set to 5 minutes. Across all sets, the mean gap for DR is 0.5\% versus 12\% for TS. Simpler baseline heuristics examined separately were less effective.
-
+The second column of Table~\ref{tab:aggregated_results} reports the percentage of instances for which the best‑known solution (BKS) was proven optimal by solving the linearized MIP model. 
+The last two columns give the average gap to the BKS (found by DR) for the 1‑thread best‑first tree search with heuristic branching rule (TS) and parallel DR, respectively. DR was run ten times per instance, whereas TS was run once, as it is deterministic. Gaps are averaged over all instances in the corresponding set. The time budget for the algorithms was set to 5 minutes. Across all sets, the mean gap for DR is 0.5\% versus 12\% for TS. Simpler baseline heuristics examined separately were less effective.
+The majority of modifications appearing in the BKSs are related to forbidding edges of the fact route.
 
 \begin{table}[ht]
   \centering
+    \begin{small}
   \begin{tabular}{l c c c}
     \toprule
     \multirow{2}{*}{\shortstack{Instance\\[2pt] set}}
@@ -402,20 +402,23 @@ The second column of Table~\ref{tab:aggregated_results} reports the percentage o
     TOTAL             &  54\% &  12\% &  0.5\% \\
     \bottomrule
   \end{tabular}
+    \end{small}
   \caption{Aggregated results}
   \label{tab:aggregated_results}
 \smallskip
-\noindent\textit{Note:} Detailed results are provided in~\cite{codebase}.
+{\small \noindent\textit{Note:} Detailed results are provided in~\cite{codebase}.}
 \end{table}
 
 
 \section{Conclusion}
 \label{sec:conclusion}
-We addressed the counterfactual routing problem by formally defining it, deriving a single‑level reformulation, and proposing TS and multi‑start DR heuristics. Computational experiments show that DR reliably finds high-quality modification sets with minimal deviation. Our method produces concise graph modifications that can serve as counterfactual explanations for personalized route choices. This has the potential to support accessible navigation for users with accessibility needs and may help surface infrastructure limitations for urban planners. Ablation studies of individual DR components and sharing strategies remain important future work.
+We addressed the counterfactual routing problem by formally defining it, deriving a single‑level reformulation, and proposing TS and parallel DR heuristics. 
+Computational experiments show that DR reliably finds concise graph modifications -- primarily forbidding fact‑route edges and allowing foil routes -- that serve as counterfactual explanations for personalized route choices.
+Ablation studies of individual DR components and sharing strategies remain important future work.
 
 
 %% The file named.bst is a bibliography style file for BibTeX 0.99c
 \bibliographystyle{named}
 \bibliography{ijcai25}
-\blfootnote{\textit{AI‑assistance disclosure -- The draft was proof‑read with a generative‑AI tool to refine wording, identify technical inaccuracies, and improve concision. All suggestions were manually reviewed; no content, data, or citations were generated by the model.}}
+\blfootnote{\textit{AI‑assistance disclosure -- The draft was proof-read with a generative‑AI tool to refine wording, identify technical inaccuracies, and improve concision. All suggestions were manually reviewed; no content, data, or citations were generated by the model.}}
 \end{document}
