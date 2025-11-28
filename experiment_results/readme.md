@@ -228,3 +228,52 @@ proven. Entries in *italic* in the TS column denote instances where the determin
 | bbox3\_0.15\_bike\_8  |  12 | 16 |     12 |   12.1 |     13 |
 | bbox3\_0.15\_bike\_9  |   7 | 11 |      7 |    7.9 |      8 |
 | bbox3\_0.15\_bike\_10 |   3 | *3*|      3 |      3 |      3 |
+
+### IJCAI CRC-25 Test Instances
+
+For this test, we relaxed the lower bound of 0.6 for the sidewalk width attribute.
+DR was run 10 times per instance, achieving a BKS value in each run.
+
+| Instances | BKS | DR | DR avg. time (s) |
+| :--- | :---: | :---: | :---: |
+| osdpm_t_0_1 | 3 | 3 | 24.5 |
+| osdpm_t_0_2 | 1 | 1 | 10.8 |
+| osdpm_t_0_3 | 3 | 3 | 71.4 |
+| osdpm_t_0_4 | 5 | 5 | 171.2 |
+| osdpm_t_0_5 | 1 | 1 | 16.0 |
+| osdpm_t_1_1 | 1 | 1 | 3.4 |
+| osdpm_t_1_2 | 1 | 1 | 3.5 |
+| osdpm_t_1_3 | 2 | 2 | 4.6 |
+| osdpm_t_1_4 | 3 | 3 | 11.2 |
+| osdpm_t_1_5 | 5 | 5 | 14.6 |
+| osdpm_t_2_1 | 4 | 4 | 19.3 |
+| osdpm_t_2_2 | 1 | 1 | 5.5 |
+| osdpm_t_2_3 | 5 | 5 | 61.9 |
+| osdpm_t_2_4 | 5 | 5 | 10.3 |
+| osdpm_t_2_5 | 1 | 1 | 4.9 |
+| osdpm_t_3_1 | 3 | 3 | 4.9 |
+| osdpm_t_3_2 | 1 | 1 | 3.8 |
+| osdpm_t_3_3 | 5 | 5 | 15.8 |
+| osdpm_t_3_4 | 1 | 1 | 3.4 |
+| osdpm_t_3_5 | 1 | 1 | 3.4 |
+| osdpm_t_4_1 | 6 | 6 | 11.2 |
+| osdpm_t_4_2 | 2 | 2 | 4.2 |
+| osdpm_t_4_3 | 3 | 3 | 9.9 |
+| osdpm_t_4_4 | 2 | 2 | 4.3 |
+| osdpm_t_4_5 | 1 | 1 | 4.6 |
+| nwmkt_t_0_1 | 3 | 3 | 12.4 |
+| nwmkt_t_0_2 | 4 | 4 | 64.7 |
+| nwmkt_t_0_3 | 1 | 1 | 7.8 |
+| nwmkt_t_0_4 | 4 | 4 | 15.0 |
+| nwmkt_t_0_5 | 4 | 4 | 10.4 |
+| nwmkt_t_1_1 | 2 | 2 | 7.3 |
+| nwmkt_t_1_2 | 2 | 2 | 4.4 |
+| nwmkt_t_1_3 | 1 | 1 | 5.7 |
+| nwmkt_t_1_4 | 1 | 1 | 4.5 |
+| nwmkt_t_1_5 | 2 | 2 | 11.4 |
+| nwmkt_t_2_1 | 1 | 1 | 4.4 |
+| nwmkt_t_2_2 | 2 | 2 | 4.5 |
+| nwmkt_t_2_3 | 3 | 3 | 51.9 |
+| nwmkt_t_2_4 | 1 | 1 | 5.4 |
+| nwmkt_t_2_5 | 1 | 1 | 4.0 |
+| avg.        | - | - | 17.8 |
