@@ -4,6 +4,8 @@ This directory contains the complete results of our computational study on the I
 We present a detailed comparison of two heuristic algorithms — **Tree Search (TS)** and **Destroy‑and‑Repair (DR)**
 — against the best‑known solutions (BKS) and optimality bounds obtained via our MIP model.
 
+Aggregated results of a studying the impact of DR's ingredients are added as a supplementary to a letter in the Frontiers of Computer Science
+
 ---
 
 ## Contents
@@ -277,3 +279,16 @@ DR was run 10 times per instance, achieving a BKS value in each run.
 | nwmkt_t_2_4 | 1 | 1 | 5.4 |
 | nwmkt_t_2_5 | 1 | 1 | 4.0 |
 | avg.        | - | - | 17.8 |
+
+## DR's ingredients impact
+To test the importance of each operator in the DR heuristic, we ran an ablation study on all instances disabling one operator at a time. The results are summarized below:
+| Excluded operator  | Avg. relative time to best |
+|-----------|----:|
+| none | 1.65 |
+| destruct_construct | 1.74 |
+| clean_up2_construct | 1.82 |
+| clean_up_construct | 1.87 |
+| ls_destruct_construct | 1.87 |
+| pop_based_construct | 3.11 |
+
+The second column shows the average relative time to best solution across all instances and 5 runs, normalized by the minimum time taken. The results indicate that all the operators contribute to the performance of the DR heuristic, with the pop-based construction operator having the most significant impact on solution quality and convergence speed.
